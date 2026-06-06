@@ -6,7 +6,7 @@ import json
 from types import SimpleNamespace
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import pytest
 
@@ -33,14 +33,11 @@ def _session() -> AsyncMock:
     return s
 
 
-def _make_definition(steps: list[dict]) -> Any:
-    return SimpleNamespace(
-        id=uuid4(),
-        steps_json=json.dumps(steps),
-    )
+def _make_definition(steps: list[dict[str, Any]]) -> Any:
+    return SimpleNamespace(id=uuid4(), steps_json=json.dumps(steps))
 
 
-def _make_execution(wf_id: Any = None) -> Any:
+def _make_execution(wf_id: UUID | None = None) -> Any:
     return SimpleNamespace(
         id=uuid4(),
         tenant_id=uuid4(),
@@ -57,7 +54,7 @@ def _make_execution(wf_id: Any = None) -> Any:
     )
 
 
-def _transform_step(step_id: str = "s1") -> dict:
+def _transform_step(step_id: str = "s1") -> dict[str, Any]:
     return {
         "id": step_id,
         "name": step_id.title(),
@@ -66,9 +63,6 @@ def _transform_step(step_id: str = "s1") -> dict:
         "depends_on": [],
         "retry": {"max_attempts": 1, "initial_delay_seconds": 0},
     }
-
-
-# ── Happy path ────────────────────────────────────────────────────────────────
 
 
 class TestWorkflowEngineSuccess:
@@ -92,7 +86,12 @@ class TestWorkflowEngineSuccess:
         mock_executor = AsyncMock(spec=StepExecutor)
         call_count = 0
 
-        async def fake_execute(step, context, ctx, session):
+        async def fake_execute(
+            step: Any,
+            context: dict[str, Any],
+            ctx: SecurityContext,
+            session: Any,
+        ) -> dict[str, Any]:
             nonlocal call_count
             call_count += 1
             return {"step": step.id}
@@ -110,9 +109,14 @@ class TestWorkflowEngineSuccess:
 
     @pytest.mark.asyncio
     async def test_step_output_propagates_to_context(self) -> None:
-        captured_contexts: list[dict] = []
+        captured_contexts: list[dict[str, Any]] = []
 
-        async def fake_execute(step, context, ctx, session):
+        async def fake_execute(
+            step: Any,
+            context: dict[str, Any],
+            ctx: SecurityContext,
+            session: Any,
+        ) -> dict[str, Any]:
             captured_contexts.append(dict(context))
             return {"value": f"out_{step.id}"}
 
@@ -157,9 +161,14 @@ class TestWorkflowEngineSuccess:
 
     @pytest.mark.asyncio
     async def test_input_available_in_context(self) -> None:
-        captured: list[dict] = []
+        captured: list[dict[str, Any]] = []
 
-        async def fake_execute(step, context, ctx, session):
+        async def fake_execute(
+            step: Any,
+            context: dict[str, Any],
+            ctx: SecurityContext,
+            session: Any,
+        ) -> dict[str, Any]:
             captured.append(context["input"])
             return {}
 
@@ -174,9 +183,6 @@ class TestWorkflowEngineSuccess:
         await engine.execute(ex, defn, _ctx(), _session())
 
         assert captured[0]["filename"] == "invoice.pdf"
-
-
-# ── Failure handling ──────────────────────────────────────────────────────────
 
 
 class TestWorkflowEngineFailure:
@@ -213,7 +219,12 @@ class TestWorkflowEngineFailure:
     async def test_subsequent_steps_not_run_after_failure(self) -> None:
         call_ids: list[str] = []
 
-        async def fake_execute(step, context, ctx, session):
+        async def fake_execute(
+            step: Any,
+            context: dict[str, Any],
+            ctx: SecurityContext,
+            session: Any,
+        ) -> dict[str, Any]:
             call_ids.append(step.id)
             if step.id == "failing_step":
                 raise WorkflowStepError("bad step")
@@ -237,7 +248,12 @@ class TestWorkflowEngineFailure:
     async def test_transient_error_retried(self) -> None:
         attempt_count = 0
 
-        async def fake_execute(step, context, ctx, session):
+        async def fake_execute(
+            step: Any,
+            context: dict[str, Any],
+            ctx: SecurityContext,
+            session: Any,
+        ) -> dict[str, Any]:
             nonlocal attempt_count
             attempt_count += 1
             if attempt_count < 3:

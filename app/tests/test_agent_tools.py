@@ -2,16 +2,14 @@
 
 from __future__ import annotations
 
-from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 
 import pytest
 
 from app.agent.tools.audit_log import AuditLogTool
-from app.agent.tools.base import ToolResult
-from app.agent.tools.rbac_policy import RBACPolicyTool
 from app.agent.tools.rag_search import RAGSearchTool
+from app.agent.tools.rbac_policy import RBACPolicyTool
 from app.agent.tools.sql_airlock import SQLAirlockTool, _validate_select_only
 from app.agent.tools.tenant_lookup import TenantLookupTool
 from app.core.exceptions import SqlAirlockViolation

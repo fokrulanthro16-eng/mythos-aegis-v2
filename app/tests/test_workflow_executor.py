@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import base64
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 
@@ -37,7 +38,7 @@ def _session() -> AsyncMock:
     return AsyncMock()
 
 
-def _step(step_type: StepType, config: dict | None = None) -> StepDefinition:
+def _step(step_type: StepType, config: dict[str, Any] | None = None) -> StepDefinition:
     return StepDefinition(
         id="test_step",
         name="Test Step",
@@ -47,7 +48,7 @@ def _step(step_type: StepType, config: dict | None = None) -> StepDefinition:
     )
 
 
-def _context(extra_input: dict | None = None) -> dict:
+def _context(extra_input: dict[str, Any] | None = None) -> dict[str, Any]:
     return {
         "input": {"project_id": str(uuid4()), **(extra_input or {})},
         "steps": {},
@@ -395,7 +396,7 @@ class TestUnknownStepType:
             config={"output": {}},
         )
         # Manually override type to something unsupported via object mutation
-        object.__setattr__(step, "type", "unknown_type")  # type: ignore[arg-type]
+        object.__setattr__(step, "type", "unknown_type")
 
         with pytest.raises((WorkflowStepError, Exception)):
             await executor.execute(step, _context(), _ctx(), _session())

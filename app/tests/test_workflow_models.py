@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 import pytest
 from pydantic import ValidationError
 
@@ -12,8 +14,6 @@ from app.workflow.models import (
     WorkflowDefinitionModel,
 )
 from app.workflow.templates import resolve, resolve_dict
-
-# ── RetryConfig ───────────────────────────────────────────────────────────────
 
 
 class TestRetryConfig:
@@ -34,9 +34,6 @@ class TestRetryConfig:
             RetryConfig(max_attempts=0)
         with pytest.raises(ValidationError):
             RetryConfig(max_attempts=11)
-
-
-# ── StepDefinition ────────────────────────────────────────────────────────────
 
 
 class TestStepDefinition:
@@ -75,10 +72,7 @@ class TestStepDefinition:
         assert step.depends_on == ["a"]
 
 
-# ── WorkflowDefinitionModel ───────────────────────────────────────────────────
-
-
-def _make_step(step_id: str, deps: list[str] | None = None) -> dict:
+def _make_step(step_id: str, deps: list[str] | None = None) -> dict[str, Any]:
     return {
         "id": step_id,
         "name": step_id.title(),
@@ -126,61 +120,58 @@ class TestWorkflowDefinitionModel:
         assert wf.description == ""
 
 
-# ── Template engine ───────────────────────────────────────────────────────────
-
-
 class TestResolve:
     def test_resolves_input_field(self) -> None:
-        ctx = {"input": {"filename": "invoice.pdf"}, "steps": {}}
+        ctx: dict[str, Any] = {"input": {"filename": "invoice.pdf"}, "steps": {}}
         assert resolve("{{ input.filename }}", ctx) == "invoice.pdf"
 
     def test_resolves_step_output(self) -> None:
-        ctx = {
+        ctx: dict[str, Any] = {
             "input": {},
             "steps": {"extract": {"output": {"text": "Hello world"}}},
         }
         assert resolve("{{ steps.extract.output.text }}", ctx) == "Hello world"
 
     def test_missing_path_returns_empty(self) -> None:
-        ctx = {"input": {}, "steps": {}}
+        ctx: dict[str, Any] = {"input": {}, "steps": {}}
         assert resolve("{{ input.missing }}", ctx) == ""
 
     def test_no_template_unchanged(self) -> None:
-        ctx = {"input": {}, "steps": {}}
+        ctx: dict[str, Any] = {"input": {}, "steps": {}}
         assert resolve("plain text", ctx) == "plain text"
 
     def test_mixed_template(self) -> None:
-        ctx = {"input": {"name": "Acme"}, "steps": {}}
+        ctx: dict[str, Any] = {"input": {"name": "Acme"}, "steps": {}}
         assert resolve("Hello {{ input.name }}!", ctx) == "Hello Acme!"
 
     def test_multiple_placeholders(self) -> None:
-        ctx = {"input": {"a": "X", "b": "Y"}, "steps": {}}
+        ctx: dict[str, Any] = {"input": {"a": "X", "b": "Y"}, "steps": {}}
         result = resolve("{{ input.a }} and {{ input.b }}", ctx)
         assert result == "X and Y"
 
 
 class TestResolveDict:
     def test_resolves_string_values(self) -> None:
-        ctx = {"input": {"q": "hello"}, "steps": {}}
-        config = {"query": "{{ input.q }}", "top_k": 5}
+        ctx: dict[str, Any] = {"input": {"q": "hello"}, "steps": {}}
+        config: dict[str, Any] = {"query": "{{ input.q }}", "top_k": 5}
         result = resolve_dict(config, ctx)
         assert result["query"] == "hello"
         assert result["top_k"] == 5
 
     def test_resolves_nested_dict(self) -> None:
-        ctx = {"input": {"val": "42"}, "steps": {}}
-        config = {"outer": {"inner": "{{ input.val }}"}}
+        ctx: dict[str, Any] = {"input": {"val": "42"}, "steps": {}}
+        config: dict[str, Any] = {"outer": {"inner": "{{ input.val }}"}}
         result = resolve_dict(config, ctx)
         assert result["outer"]["inner"] == "42"
 
     def test_resolves_list_strings(self) -> None:
-        ctx = {"input": {"tag": "foo"}, "steps": {}}
-        config = {"tags": ["{{ input.tag }}", "static"]}
+        ctx: dict[str, Any] = {"input": {"tag": "foo"}, "steps": {}}
+        config: dict[str, Any] = {"tags": ["{{ input.tag }}", "static"]}
         result = resolve_dict(config, ctx)
         assert result["tags"] == ["foo", "static"]
 
     def test_non_string_values_preserved(self) -> None:
-        ctx = {"input": {}, "steps": {}}
-        config = {"count": 10, "flag": True, "ratio": 0.5}
+        ctx: dict[str, Any] = {"input": {}, "steps": {}}
+        config: dict[str, Any] = {"count": 10, "flag": True, "ratio": 0.5}
         result = resolve_dict(config, ctx)
         assert result == config

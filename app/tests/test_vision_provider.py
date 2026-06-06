@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -110,9 +111,9 @@ class TestAnalyzeSuccess:
         expected_b64 = base64.b64encode(image_bytes).decode("ascii")
         mock_resp = _mock_response("ok")
 
-        captured_payload: dict = {}
+        captured_payload: dict[str, Any] = {}
 
-        async def capture_post(url: str, json: dict) -> MagicMock:
+        async def capture_post(url: str, json: dict[str, Any]) -> MagicMock:
             captured_payload.update(json)
             return mock_resp
 
@@ -132,9 +133,9 @@ class TestAnalyzeSuccess:
     async def test_payload_uses_configured_model(self) -> None:
         provider = _make_provider("llama3.2-vision:11b")
         mock_resp = _mock_response("ok")
-        captured: dict = {}
+        captured: dict[str, Any] = {}
 
-        async def capture_post(url: str, json: dict) -> MagicMock:
+        async def capture_post(url: str, json: dict[str, Any]) -> MagicMock:
             captured.update(json)
             return mock_resp
 
@@ -153,9 +154,9 @@ class TestAnalyzeSuccess:
     async def test_low_temperature_in_options(self) -> None:
         provider = _make_provider()
         mock_resp = _mock_response("ok")
-        captured: dict = {}
+        captured: dict[str, Any] = {}
 
-        async def capture_post(url: str, json: dict) -> MagicMock:
+        async def capture_post(url: str, json: dict[str, Any]) -> MagicMock:
             captured.update(json)
             return mock_resp
 

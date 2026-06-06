@@ -17,7 +17,7 @@ from app.domain.common import (
 class AgentSession(
     UUIDPrimaryKeyMixin, TenantMixin, TimestampMixin, SoftDeleteMixin, Base
 ):
-    """One multi-turn agent conversation session, scoped to a tenant + project + user."""
+    """Multi-turn agent conversation session, scoped to a tenant + project + user."""
 
     __tablename__ = "agent_sessions"
     __table_args__ = (

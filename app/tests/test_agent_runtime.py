@@ -2,15 +2,14 @@
 
 from __future__ import annotations
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
 
 import pytest
 
 from app.agent.prompt_builder import build_system_prompt, format_tool_result
-from app.agent.runtime import AgentRuntime, TurnResult
-from app.agent.schemas import ToolCallRecord
-from app.agent.tools.base import ToolDefinition, ToolParameter, ToolResult
+from app.agent.runtime import AgentRuntime
+from app.agent.tools.base import ToolDefinition, ToolResult
 from app.agent.tools.registry import ToolRegistry
 from app.core.security_context import SecurityContext
 
@@ -49,7 +48,8 @@ class TestParseResponse:
         assert tool_call is None
 
     def test_detects_action(self) -> None:
-        text = 'ACTION: {"tool": "rag_search", "params": {"query": "test", "project_id": "abc"}}'
+        action = '{"tool":"rag_search","params":{"query":"test","project_id":"x"}}'
+        text = f"ACTION: {action}"
         answer, tool_call = self.runtime._parse_response(text)
         assert answer is None
         assert tool_call is not None

@@ -8,6 +8,7 @@ Uses the same JWT middleware bypass pattern established in test_rag_routes.py:
 from __future__ import annotations
 
 from collections.abc import Generator
+from datetime import UTC
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 
@@ -150,13 +151,13 @@ class TestRunAgent:
 
 class TestCreateSession:
     def test_creates_session(self, client: TestClient) -> None:
-        from datetime import datetime, timezone
+        from datetime import datetime
 
         mock_session = MagicMock()
         mock_session.id = uuid4()
         mock_session.project_id = uuid4()
         mock_session.title = "Test session"
-        mock_session.created_at = datetime.now(timezone.utc)
+        mock_session.created_at = datetime.now(UTC)
 
         with patch(
             "app.agent.routes.AgentOrchestrator.create_session",
@@ -233,7 +234,7 @@ class TestChat:
 
 class TestGetSessionHistory:
     def test_returns_history(self, client: TestClient) -> None:
-        from datetime import datetime, timezone
+        from datetime import datetime
 
         session_id = uuid4()
         mock_session_obj = MagicMock()
@@ -245,7 +246,7 @@ class TestGetSessionHistory:
         mock_msg.role = "user"
         mock_msg.content = "Hi"
         mock_msg.tool_name = None
-        mock_msg.created_at = datetime.now(timezone.utc)
+        mock_msg.created_at = datetime.now(UTC)
 
         with (
             patch(

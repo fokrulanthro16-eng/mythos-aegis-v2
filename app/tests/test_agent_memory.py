@@ -63,7 +63,7 @@ class TestConversationMemory:
 
     @pytest.mark.asyncio
     async def test_get_messages_windowing_drops_oldest(self) -> None:
-        # 3 messages of 100 chars each, budget = 150 → keep last 1 (100 ≤ 150, second would be 200 > 150)
+        # 3 msgs × 100 chars, budget=150 → keep last 1 (100≤150, two would be 200>150)
         msgs = [
             _make_message("user", "a" * 100),
             _make_message("assistant", "b" * 100),

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Generator
 from datetime import UTC, datetime
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 
@@ -102,7 +103,7 @@ def _exec_response(status: str = "completed") -> ExecutionResponse:
     )
 
 
-def _valid_workflow_body(name: str = "Test Workflow") -> dict:
+def _valid_workflow_body(name: str = "Test Workflow") -> dict[str, Any]:
     return {
         "name": name,
         "description": "A test workflow",
