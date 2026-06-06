@@ -126,7 +126,7 @@ class SQLAirlockTool(BaseTool):
                 success=False, data=None, error=f"SQL blocked: {exc.message}"
             )
 
-        safe_sql = f"SELECT * FROM ({sql}) AS _agent_q LIMIT {_MAX_ROWS}"
+        safe_sql = f"SELECT * FROM ({sql}) AS _agent_q LIMIT {_MAX_ROWS}"  # nosec B608
 
         try:
             result = await session.execute(text(safe_sql))
