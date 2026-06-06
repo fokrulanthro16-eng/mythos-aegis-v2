@@ -13,3 +13,7 @@ coverage/
 uvicorn.log
 uvicorn_err.log
 backups/
+
+.coverage
+htmlcov/
+.pytest_cache/.mypy_cache/.ruff_cache/
