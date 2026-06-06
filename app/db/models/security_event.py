@@ -17,7 +17,7 @@ class SecurityEventType(StrEnum):
     SQL_BLOCK = "sql_block"
     RATE_LIMIT = "rate_limit"
     ISOLATION_VIOLATION = "isolation_violation"
-    SECRET_ROTATION = "secret_rotation"
+    SECRET_ROTATION = "secret_rotation"  # pragma: allowlist secret
     AUTH_SUCCESS = "auth_success"
     SUSPICIOUS_ACTIVITY = "suspicious_activity"
 

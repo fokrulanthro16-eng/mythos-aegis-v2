@@ -12,7 +12,7 @@ from app.domain.common import TenantMixin, TimestampMixin, UUIDPrimaryKeyMixin
 
 class ActorType(StrEnum):
     USER = "user"
-    API_KEY = "api_key"
+    API_KEY = "api_key"  # pragma: allowlist secret
     SYSTEM = "system"
 
 
