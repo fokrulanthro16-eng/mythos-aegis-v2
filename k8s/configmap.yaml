@@ -1,0 +1,32 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mythos-aegis-config
+  namespace: mythos-aegis
+  labels:
+    app.kubernetes.io/name: mythos-aegis
+    app.kubernetes.io/component: api
+    app.kubernetes.io/part-of: mythos-aegis
+data:
+  APP_ENV: "production"
+
+  # JWT — non-sensitive settings (secrets are in mythos-aegis-secrets)
+  JWT_ISSUER: "mythos-aegis"
+  JWT_AUDIENCE: "mythos-aegis-api"
+  JWT_EXPIRY_SECONDS: "3600"
+
+  # Intent parser
+  INTENT_CONFIDENCE_THRESHOLD: "0.85"
+
+  # SQL Airlock
+  SQL_TIMEOUT_SECONDS: "3"
+  SQL_MAX_LIMIT: "100"
+
+  # OpenTelemetry — set OTEL_ENABLED=true and point at your collector
+  OTEL_ENABLED: "false"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector.observability.svc.cluster.local:4318/v1/traces"
+  OTEL_SERVICE_NAME: "mythos-aegis"
+
+  # Python runtime flags — suppress .pyc writes (required for readOnlyRootFilesystem)
+  PYTHONDONTWRITEBYTECODE: "1"
+  PYTHONUNBUFFERED: "1"

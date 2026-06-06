@@ -1,0 +1,26 @@
+# Requires Kubernetes ≥ 1.21 (policy/v1 stable).
+#
+# PodDisruptionBudget ensures at least 2 pods are always available during:
+#   - Node maintenance (kubectl drain)
+#   - Cluster upgrades
+#   - Rolling Deployment updates
+#
+# With 3 replicas and minAvailable: 2, at most 1 pod may be disrupted at once.
+# This aligns with Deployment.spec.strategy.rollingUpdate.maxUnavailable: 1.
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: mythos-aegis
+  namespace: mythos-aegis
+  labels:
+    app.kubernetes.io/name: mythos-aegis
+    app.kubernetes.io/component: api
+    app.kubernetes.io/part-of: mythos-aegis
+spec:
+  # minAvailable: 2 means a node drain will block until a replacement pod
+  # is healthy before evicting the next pod.
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: mythos-aegis
+      app.kubernetes.io/component: api

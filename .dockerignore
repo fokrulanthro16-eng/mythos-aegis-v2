@@ -1,0 +1,50 @@
+# Python runtime artifacts
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+
+# Virtual environment — dependencies are installed fresh inside the image.
+.venv/
+venv/
+env/
+
+# Version control
+.git/
+.gitignore
+.gitattributes
+
+# Secrets and local config — never bake these into the image.
+.env
+.env.*
+
+# Tool caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.hypothesis/
+*.log
+
+# IDE / editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS artefacts
+.DS_Store
+Thumbs.db
+
+# CI / supply-chain / infrastructure files — not needed at runtime
+.github/
+scripts/
+k8s/
+.secrets.baseline
+
+# Documentation (not needed at runtime)
+README.md
+CHANGELOG.md
+docs/

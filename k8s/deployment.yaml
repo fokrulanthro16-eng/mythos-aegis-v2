@@ -1,0 +1,163 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mythos-aegis
+  namespace: mythos-aegis
+  labels:
+    app.kubernetes.io/name: mythos-aegis
+    app.kubernetes.io/component: api
+    app.kubernetes.io/version: "0.1.0"
+    app.kubernetes.io/part-of: mythos-aegis
+spec:
+  # Three replicas give HA across availability zones while satisfying
+  # the PodDisruptionBudget (minAvailable: 2).
+  replicas: 3
+
+  # A pod must be fully ready for this long before being counted as available.
+  # Prevents a bad rollout from completing before a crash loop is detected.
+  minReadySeconds: 10
+
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: mythos-aegis
+      app.kubernetes.io/component: api
+
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      # One pod down at a time preserves the PDB minAvailable: 2 guarantee.
+      maxUnavailable: 1
+      # One extra pod during rollout so capacity stays at ≥3 while updating.
+      maxSurge: 1
+
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: mythos-aegis
+        app.kubernetes.io/component: api
+        app.kubernetes.io/version: "0.1.0"
+      annotations:
+        # Prometheus metrics scraping
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8000"
+        prometheus.io/path: "/metrics"
+
+    spec:
+      # ── Scheduling ──────────────────────────────────────────────────────────
+      # Spread pods across nodes; at most 1 more pod on one node than another.
+      # Requires ≥3 schedulable nodes for full satisfaction.
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: mythos-aegis
+              app.kubernetes.io/component: api
+
+      # ── Pod-level security ───────────────────────────────────────────────────
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001   # appuser — matches Dockerfile UID
+        runAsGroup: 1001  # appgroup
+        fsGroup: 1001
+        seccompProfile:
+          type: RuntimeDefault
+
+      # This app does not call the Kubernetes API — disable token automount.
+      automountServiceAccountToken: false
+
+      # Give the app 30s to drain in-flight requests on SIGTERM before SIGKILL.
+      terminationGracePeriodSeconds: 30
+
+      containers:
+        - name: api
+          # Replace with your registry and tag.
+          # Avoid 'latest' in production — use an immutable digest or semver tag.
+          image: ghcr.io/YOUR_ORG/mythos-aegis:0.1.0
+          imagePullPolicy: IfNotPresent
+
+          ports:
+            - name: http
+              containerPort: 8000
+              protocol: TCP
+
+          # ── Container-level security ───────────────────────────────────────
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 1001
+            runAsGroup: 1001
+            capabilities:
+              drop:
+                - ALL
+
+          # ── Resource limits ────────────────────────────────────────────────
+          resources:
+            requests:
+              cpu: 250m
+              memory: 256Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
+
+          # ── Environment ────────────────────────────────────────────────────
+          envFrom:
+            - configMapRef:
+                name: mythos-aegis-config
+            - secretRef:
+                name: mythos-aegis-secrets
+
+          # ── Volumes ────────────────────────────────────────────────────────
+          # readOnlyRootFilesystem requires explicit writable mounts.
+          # /tmp is needed by Python internals and the prometheus-client.
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+
+          # ── Lifecycle ──────────────────────────────────────────────────────
+          # Sleep 5s before shutdown so the load balancer finishes draining.
+          lifecycle:
+            preStop:
+              exec:
+                command: ["/bin/sleep", "5"]
+
+          # ── Health probes ──────────────────────────────────────────────────
+          # startupProbe gates liveness and readiness until the app is up.
+          # 30 × 10s = 5 min maximum startup window (generous for cold starts).
+          startupProbe:
+            httpGet:
+              path: /health/startup
+              port: http
+            periodSeconds: 10
+            failureThreshold: 30
+            timeoutSeconds: 5
+
+          # livenessProbe kills and restarts a pod that stops responding.
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: http
+            periodSeconds: 15
+            failureThreshold: 3
+            successThreshold: 1
+            timeoutSeconds: 5
+
+          # readinessProbe removes the pod from the Service endpoints when the
+          # database is unreachable, preventing errors from reaching clients.
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: http
+            periodSeconds: 10
+            failureThreshold: 3
+            successThreshold: 1
+            timeoutSeconds: 5
+
+      volumes:
+        # In-memory tmpfs for /tmp — no disk I/O, capped at 64Mi.
+        - name: tmp
+          emptyDir:
+            medium: Memory
+            sizeLimit: 64Mi

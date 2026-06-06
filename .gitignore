@@ -1,0 +1,15 @@
+.env
+.venv/
+__pycache__/
+*.pyc
+node_modules/
+apps/admin/node_modules/
+.next/
+apps/admin/.next/
+dist/
+build/
+coverage/
+*.log
+uvicorn.log
+uvicorn_err.log
+backups/

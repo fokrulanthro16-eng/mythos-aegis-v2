@@ -1,0 +1,79 @@
+name: Docker
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    name: Build · Validate · Smoke-test
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # ── Build ──────────────────────────────────────────────────────────────
+      - name: Build image
+        run: docker build -t mythos-aegis:ci .
+
+      # ── Compose validation ─────────────────────────────────────────────────
+      - name: Validate docker-compose config
+        run: docker compose config --quiet
+
+      # ── Non-root assertion ─────────────────────────────────────────────────
+      # The Dockerfile creates appuser (UID 1001) and switches to it.
+      # This step fails the build if the image is accidentally changed to root.
+      - name: Assert container runs as non-root
+        run: |
+          RUN_USER=$(docker run --rm \
+            --entrypoint whoami \
+            mythos-aegis:ci)
+          echo "Container user: $RUN_USER"
+          if [ "$RUN_USER" = "root" ]; then
+            echo "FAIL: container must not run as root"
+            exit 1
+          fi
+          echo "OK: running as $RUN_USER"
+
+      # ── Smoke test ─────────────────────────────────────────────────────────
+      # Override the entrypoint (which waits for postgres) with plain uvicorn.
+      # /health/live returns 200 immediately — no database needed.
+      - name: Start smoke container
+        run: |
+          docker run -d --name smoke \
+            -e APP_ENV=development \
+            -e DATABASE_URL=postgresql+asyncpg://unused:unused@localhost:5432/test \
+            -e JWT_SECRET=smoke-test-secret-for-ci-only-do-not-use \
+            -p 8000:8000 \
+            --entrypoint python \
+            mythos-aegis:ci \
+            -m uvicorn app.main:app --host 0.0.0.0 --port 8000
+
+      - name: Wait for liveness probe
+        run: |
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:8000/health/live > /dev/null; then
+              echo "Liveness probe OK after ${i}s"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "Container did not become ready within 30s"
+          docker logs smoke
+          exit 1
+
+      - name: Check liveness response shape
+        run: |
+          BODY=$(curl -s http://localhost:8000/health/live)
+          echo "Response: $BODY"
+          echo "$BODY" | python3 -c "
+          import json, sys
+          d = json.load(sys.stdin)
+          assert d.get('status') == 'ok', f'unexpected body: {d}'
+          print('Shape OK')
+          "
+
+      - name: Stop smoke container
+        if: always()
+        run: docker stop smoke && docker rm smoke

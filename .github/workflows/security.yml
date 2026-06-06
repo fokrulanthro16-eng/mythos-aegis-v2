@@ -1,0 +1,66 @@
+name: Security
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    # Weekly on Monday at 02:00 UTC — catch newly published CVEs.
+    - cron: "0 2 * * 1"
+
+jobs:
+  audit:
+    name: Dependency audit · SAST · Secret scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install project and security tools
+        run: |
+          pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      # ── Dependency vulnerability audit ─────────────────────────────────────
+      # pip-audit queries the OSV database for known CVEs in all installed
+      # packages.  --skip-editable excludes the local project (not on PyPI).
+      - name: pip-audit
+        run: pip-audit --skip-editable --progress-spinner off
+
+      # ── Static application security testing (SAST) ─────────────────────────
+      # Bandit scans Python source for common security anti-patterns.
+      # -ll: report medium + high severity only (skip low-confidence noise).
+      # -x app/tests: test code is excluded (assert statements are intentional).
+      - name: bandit SAST
+        run: |
+          bandit \
+            -r app/ \
+            -ll \
+            -x app/tests/ \
+            --format txt
+
+      # ── Secret scanning ─────────────────────────────────────────────────────
+      # Scans source and config files for accidentally committed secrets.
+      # Test files and .env examples are excluded from the scan scope.
+      # To mark a false positive: add  # pragma: allowlist secret  to the line.
+      # To update the baseline after a confirmed false positive:
+      #   detect-secrets scan --exclude-files ... app/ > .secrets.baseline
+      - name: detect-secrets
+        run: |
+          detect-secrets scan \
+            --exclude-files 'app/tests/.*' \
+            --exclude-files '\.env\..*' \
+            app/ docker-compose.yml > /tmp/secrets-scan.json
+          python3 - << 'EOF'
+          import json, sys
+          results = json.load(open("/tmp/secrets-scan.json")).get("results", {})
+          for fn, findings in results.items():
+              for f in findings:
+                  print(f"Secret detected: {fn}:{f['line_number']} ({f['type']})")
+          sys.exit(1 if results else 0)
+          EOF

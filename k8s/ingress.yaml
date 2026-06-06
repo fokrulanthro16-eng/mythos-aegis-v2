@@ -1,0 +1,72 @@
+# Requires the NGINX Ingress Controller (https://kubernetes.github.io/ingress-nginx).
+# For other ingress controllers, replace the annotations and ingressClassName.
+#
+# TLS certificate options:
+#   a) cert-manager (recommended): uncomment the cert-manager annotation below
+#      and ensure a ClusterIssuer named 'letsencrypt-prod' exists.
+#   b) Manual: create a TLS secret and reference it in spec.tls[].secretName.
+#      kubectl create secret tls mythos-aegis-tls \
+#        --cert=path/to/cert.pem \
+#        --key=path/to/key.pem \
+#        --namespace=mythos-aegis
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: mythos-aegis
+  namespace: mythos-aegis
+  labels:
+    app.kubernetes.io/name: mythos-aegis
+    app.kubernetes.io/component: api
+    app.kubernetes.io/part-of: mythos-aegis
+  annotations:
+    # Ingress class — change to match your controller if not using nginx.
+    kubernetes.io/ingress.class: nginx
+
+    # Force HTTPS for all traffic.
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+
+    # Request body limit: 1 MiB — intent payloads are small JSON blobs.
+    nginx.ingress.kubernetes.io/proxy-body-size: "1m"
+
+    # Timeouts (seconds): generous enough for LLM-assisted pathways.
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "60"
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "10"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "60"
+
+    # Upstream keepalive — reduces connection setup overhead.
+    nginx.ingress.kubernetes.io/upstream-keepalive-connections: "32"
+
+    # Recommended security headers.
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      more_set_headers "X-Frame-Options: DENY";
+      more_set_headers "X-Content-Type-Options: nosniff";
+      more_set_headers "X-XSS-Protection: 1; mode=block";
+      more_set_headers "Referrer-Policy: strict-origin-when-cross-origin";
+      more_set_headers "Permissions-Policy: geolocation=(), microphone=(), camera=()";
+
+    # cert-manager automatic TLS (uncomment to use):
+    # cert-manager.io/cluster-issuer: letsencrypt-prod
+
+spec:
+  ingressClassName: nginx
+
+  # TLS termination — replace 'api.example.com' with your actual hostname.
+  tls:
+    - hosts:
+        - api.example.com
+      # Secret created by cert-manager, or manually via kubectl create secret tls.
+      secretName: mythos-aegis-tls
+
+  rules:
+    - host: api.example.com
+      http:
+        paths:
+          # Route all traffic to the API service.
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: mythos-aegis
+                port:
+                  name: http

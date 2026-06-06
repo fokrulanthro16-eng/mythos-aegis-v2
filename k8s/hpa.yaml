@@ -1,0 +1,53 @@
+# Requires Kubernetes ≥ 1.23 (autoscaling/v2 stable).
+# Requires the Metrics Server: https://github.com/kubernetes-sigs/metrics-server
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: mythos-aegis
+  namespace: mythos-aegis
+  labels:
+    app.kubernetes.io/name: mythos-aegis
+    app.kubernetes.io/component: api
+    app.kubernetes.io/part-of: mythos-aegis
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: mythos-aegis
+
+  # minReplicas matches the Deployment replica count so manual scale-downs
+  # do not conflict with the HPA lower bound.
+  minReplicas: 3
+  maxReplicas: 10
+
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          # Scale up when average CPU across all pods exceeds 70%.
+          # With requests.cpu=250m, this triggers at ~175m actual CPU per pod.
+          averageUtilization: 70
+
+  behavior:
+    scaleUp:
+      # React to load spikes immediately — no stabilisation window.
+      stabilizationWindowSeconds: 0
+      policies:
+        # Add at most 2 pods per 60s to avoid thundering-herd on the database.
+        - type: Pods
+          value: 2
+          periodSeconds: 60
+      selectPolicy: Max
+
+    scaleDown:
+      # Wait 5 minutes before removing pods — prevents flapping after a
+      # short burst and gives in-flight requests time to complete.
+      stabilizationWindowSeconds: 300
+      policies:
+        # Remove at most 1 pod per 60s on the way down.
+        - type: Pods
+          value: 1
+          periodSeconds: 60
+      selectPolicy: Min
