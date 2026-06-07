@@ -11,6 +11,10 @@ import {
   Activity,
   Settings,
   Hexagon,
+  BookOpen,
+  Eye,
+  Bot,
+  CreditCard,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -20,6 +24,10 @@ const navItems = [
   { icon: ShieldAlert, href: "/console/security", label: "Security Events" },
   { icon: Users, href: "/console/tenants", label: "Tenant Intelligence" },
   { icon: Activity, href: "/console/observability", label: "Observability" },
+  { icon: BookOpen, href: "/console/rag", label: "RAG Pipeline" },
+  { icon: Eye, href: "/console/vision", label: "Vision Analysis" },
+  { icon: Bot, href: "/console/agent", label: "Agent Runner" },
+  { icon: CreditCard, href: "/console/billing", label: "Billing" },
 ];
 
 function NavItem({

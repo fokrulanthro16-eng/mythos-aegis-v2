@@ -21,31 +21,34 @@ const FACTORS: RiskFactor[] = [
 // Forecast: 6-hour predicted risk
 const FORECAST = [24, 22, 25, 29, 34, 38, 41];
 
+// Module-level constants — computed once, identical on server and client
+const GAUGE_R = 42;
+const GAUGE_CX = 52;
+const GAUGE_CY = 52;
+const GAUGE_START = -220 * (Math.PI / 180);
+const GAUGE_SWEEP = 240 * (Math.PI / 180);
+
+// Coordinates rounded to 4 dp so the serialized string is byte-for-byte
+// identical between Node.js SSR and browser, preventing hydration mismatches.
+function buildArcPath(sweepFraction: number): string {
+  const sweep = sweepFraction * GAUGE_SWEEP;
+  const end = GAUGE_START + sweep;
+  const x1 = (GAUGE_CX + GAUGE_R * Math.cos(GAUGE_START)).toFixed(4);
+  const y1 = (GAUGE_CY + GAUGE_R * Math.sin(GAUGE_START)).toFixed(4);
+  const x2 = (GAUGE_CX + GAUGE_R * Math.cos(end)).toFixed(4);
+  const y2 = (GAUGE_CY + GAUGE_R * Math.sin(end)).toFixed(4);
+  const large = Math.abs(sweep) > Math.PI ? 1 : 0;
+  return `M ${x1} ${y1} A ${GAUGE_R} ${GAUGE_R} 0 ${large} 1 ${x2} ${y2}`;
+}
+
+const TRACK_PATH = buildArcPath(1); // Full 240° track — precomputed at module load
+
 function RiskGauge({ score }: { score: number }) {
-  const r = 42;
-  const cx = 52;
-  const cy = 52;
-  // Arc from -220° to 40° (240° sweep)
-  const startAngle = -220 * (Math.PI / 180);
-  const sweepAngle = 240 * (Math.PI / 180);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
 
-  const arcPath = (start: number, sweep: number, reverse = false) => {
-    const rads = reverse ? -sweep : sweep;
-    const endA = start + rads;
-    const x1 = cx + r * Math.cos(start);
-    const y1 = cy + r * Math.sin(start);
-    const x2 = cx + r * Math.cos(endA);
-    const y2 = cy + r * Math.sin(endA);
-    const large = Math.abs(rads) > Math.PI ? 1 : 0;
-    const sweep2 = reverse ? 0 : 1;
-    return `M ${x1} ${y1} A ${r} ${r} 0 ${large} ${sweep2} ${x2} ${y2}`;
-  };
-
-  // Track arc (full 240°)
-  const trackPath = arcPath(startAngle, sweepAngle);
-  // Fill arc (proportional to score)
-  const fillSweep = (score / 100) * sweepAngle;
-  const fillPath = arcPath(startAngle, fillSweep);
+  // Deterministic: integer score (10-90) only — no browser globals in render path
+  const fillPath = buildArcPath(score / 100);
 
   const scoreColor = score < 30 ? "#10b981" : score < 60 ? "#f59e0b" : "#ef4444";
   const label = score < 30 ? "LOW RISK" : score < 60 ? "MODERATE" : "HIGH RISK";
@@ -64,28 +67,39 @@ function RiskGauge({ score }: { score: number }) {
         </defs>
         {/* Track */}
         <path
-          d={trackPath}
+          d={TRACK_PATH}
           fill="none"
           stroke="rgba(255,255,255,0.06)"
           strokeWidth={5}
           strokeLinecap="round"
         />
-        {/* Fill */}
-        <motion.path
-          d={fillPath}
-          fill="none"
-          stroke={scoreColor}
-          strokeWidth={5}
-          strokeLinecap="round"
-          filter="url(#gauge-glow)"
-          initial={{ pathLength: 0 }}
-          animate={{ pathLength: 1 }}
-          transition={{ duration: 1.2, ease: "easeOut" }}
-        />
+        {/* Fill — client-only animation prevents SSR/hydration d-attribute mismatch */}
+        {mounted ? (
+          <motion.path
+            d={fillPath}
+            fill="none"
+            stroke={scoreColor}
+            strokeWidth={5}
+            strokeLinecap="round"
+            filter="url(#gauge-glow)"
+            initial={{ pathLength: 0 }}
+            animate={{ pathLength: 1 }}
+            transition={{ duration: 1.2, ease: "easeOut" }}
+          />
+        ) : (
+          <path
+            d={fillPath}
+            fill="none"
+            stroke={scoreColor}
+            strokeWidth={5}
+            strokeLinecap="round"
+            filter="url(#gauge-glow)"
+          />
+        )}
         {/* Score text */}
         <text
-          x={cx}
-          y={cy}
+          x={GAUGE_CX}
+          y={GAUGE_CY}
           textAnchor="middle"
           dominantBaseline="middle"
           fontSize={20}
@@ -97,8 +111,8 @@ function RiskGauge({ score }: { score: number }) {
           {score}
         </text>
         <text
-          x={cx}
-          y={cy + 14}
+          x={GAUGE_CX}
+          y={GAUGE_CY + 14}
           textAnchor="middle"
           fontSize={7}
           fontFamily="monospace"
