@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 from typing import Annotated
 
 from fastapi import Depends, FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 from pydantic import BaseModel, field_validator
@@ -48,20 +49,33 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
 app = FastAPI(
     title="Mythos Aegis",
     description=(
-        "Deterministic intent parser and secure execution gateway. "
+        "AI SaaS platform with RAG, Vision, Agent, Billing, and Workflow. "
         "All requests are routed through pathway-specific guardrails."
     ),
-    version="0.3.0",
+    version="0.4.0",
     lifespan=lifespan,
 )
 
 # Middleware stack (last add_middleware call becomes outermost — runs first):
-#   ObservabilityMiddleware  ← outermost: sets request_id, records metrics
-#   JWTAuthMiddleware        ← middle: validates JWT, sets security_context
+#   CORSMiddleware           ← outermost: preflight before JWT blocks OPTIONS
+#   ObservabilityMiddleware  ← sets request_id, records metrics
+#   JWTAuthMiddleware        ← validates JWT, sets security_context
 #   RateLimitMiddleware      ← innermost: reads security_context, enforces limits
 app.add_middleware(RateLimitMiddleware)
 app.add_middleware(JWTAuthMiddleware)
 app.add_middleware(ObservabilityMiddleware)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:3001",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 app.add_exception_handler(IntentParseError, intent_parse_error_handler)  # type: ignore[arg-type]
 app.add_exception_handler(SecurityViolationError, security_violation_handler)  # type: ignore[arg-type]
