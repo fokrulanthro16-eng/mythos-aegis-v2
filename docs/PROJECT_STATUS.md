@@ -16,7 +16,7 @@ Last updated: 2026-06-07
 | Billing (mock) | **Complete** | No external deps |
 | Billing (Stripe) | **Config only** | Set `BILLING_PROVIDER=stripe` + keys |
 | Workflow engine | **Complete** | |
-| Admin console | **Complete** | Next.js 15, 14 routes, build green |
+| Admin console | **Complete** | Next.js 15, 10 console routes + landing page, build green |
 | CORS | **Complete** | localhost:3000 + 3001 allowed |
 | Demo JWT flow | **Complete** | See README §3 |
 | .env.example | **Complete** | All vars documented and correct |

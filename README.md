@@ -208,9 +208,10 @@ All routes at `/v1/` require `Authorization: Bearer <jwt>`.
 
 | Method | Path | Description |
 |---|---|---|
-| `POST` | `/v1/agent/run` | Run agent (`{ project_id, question }`) |
-| `GET` | `/v1/agent/sessions` | List sessions |
-| `GET` | `/v1/agent/sessions/{id}` | Get session |
+| `POST` | `/v1/agent/run` | Run agent — stateless (`{ project_id, question }`) |
+| `POST` | `/v1/agent/sessions` | Create multi-turn session |
+| `POST` | `/v1/agent/sessions/{id}/chat` | Send message in session |
+| `GET` | `/v1/agent/sessions/{id}` | Get session history |
 
 ### Billing
 
