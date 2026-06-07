@@ -4,8 +4,8 @@ build-backend = "hatchling.build"
 
 [project]
 name = "mythos-aegis"
-version = "0.1.0"
-description = "Mythos Aegis – Phase 1 deterministic intent parser and security boundary gateway"
+version = "0.4.0"
+description = "Mythos Aegis – Multi-tenant AI SaaS platform with RAG, Vision, Agent, Billing, and Workflow"
 requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.115.0",

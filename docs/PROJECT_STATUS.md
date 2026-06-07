@@ -19,7 +19,7 @@ Last updated: 2026-06-07
 | Admin console | **Complete** | Next.js 15, 14 routes, build green |
 | CORS | **Complete** | localhost:3000 + 3001 allowed |
 | Demo JWT flow | **Complete** | See README §3 |
-| .env.example | **Complete** | All vars documented |
+| .env.example | **Complete** | All vars documented and correct |
 | README | **Complete** | Full platform description |
 | Docker | **Complete** | Non-root, smoke-tested |
 | K8s manifests | **Complete** | 8 manifests, HPA + PDB |
@@ -66,7 +66,11 @@ Run: `pytest --cov=app --cov-report=term-missing`
 - **SVG hydration** — Moved `RiskGauge` arc path constants to module scope with `.toFixed(4)`
   rounding; eliminated server/client float-string mismatch.
 - **README** — Complete rewrite; describes full AI SaaS platform, not Phase 1 intent parser.
-- **.env.example** — Added OLLAMA_*, RAG_*, VISION_*, AGENT_*, WORKFLOW_*, BILLING_* vars.
+- **.env.example** — Added OLLAMA_*, RAG_*, VISION_*, AGENT_*, WORKFLOW_*, BILLING_* vars;
+  fixed `RAG_MAX_FILE_SIZE_MB` (was `_BYTES`) and `VISION_MAX_IMAGE_SIZE_MB` (was `_BYTES`);
+  added `JWT_PREVIOUS_SECRET` and `JWT_ALGORITHM`.
+- **pyproject.toml** — Bumped `version` to `0.4.0`; updated `description` to match platform scope.
+- **docs/release/** — Added `SCREENSHOT_CHECKLIST.md`, `RELEASE_NOTES.md`, `PORTFOLIO_SUMMARY.md`.
 
 ---
 
