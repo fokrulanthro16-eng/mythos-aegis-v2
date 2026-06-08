@@ -17,6 +17,13 @@ class Settings(BaseSettings):
     )
 
     DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/mythos_aegis"  # pragma: allowlist secret  # noqa: E501
+    # Set true for TLS-required hosts (Supabase, RDS, Cloud SQL).
+    # asyncpg passes this as ssl="require" in connect_args.
+    DB_SSL_REQUIRE: bool = False
+    # Set true when the target database has pgvector installed and the
+    # embedding column has been migrated to vector(768).  Switches the
+    # DocumentChunk model from ARRAY(Float) to Vector(768).
+    USE_PGVECTOR: bool = False
     APP_ENV: str = "development"
     INTENT_CONFIDENCE_THRESHOLD: float = 0.85
     SQL_TIMEOUT_SECONDS: int = 3

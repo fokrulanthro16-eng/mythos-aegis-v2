@@ -1,10 +1,13 @@
 # Mythos Aegis — Project Status
 
-Last updated: 2026-06-07
+Last updated: 2026-06-08
 
 ---
 
-## Overall readiness: ~90%
+## Overall readiness: 72% production / 87% portfolio-demo
+
+> See [`docs/release/PRODUCTION_READINESS_REVIEW.md`](release/PRODUCTION_READINESS_REVIEW.md) for
+> the full mentor review document with checklist and gap analysis produced on 2026-06-08.
 
 | Area | Status | Notes |
 |---|---|---|
@@ -25,6 +28,8 @@ Last updated: 2026-06-07
 | K8s manifests | **Complete** | 8 manifests, HPA + PDB |
 | CI/CD | **Complete** | ci.yml, docker.yml, security.yml |
 | Screenshots | **Pending** | Requires running stack |
+| Local DB validation | **Complete** | PG18, 26 tables, smoke tested 2026-06-08 |
+| pgvector | **Missing** | `double precision[]` fallback; vector search degraded |
 | Demo script | **Complete** | See docs/DEMO.md |
 
 ---
@@ -32,28 +37,39 @@ Last updated: 2026-06-07
 ## Test coverage
 
 ```
-926 tests, 0 failures
-Coverage: ≥ 90% (above 80% CI minimum)
+926 tests, 0 failures, 9 warnings (verified 2026-06-08)
+Coverage: 89% (above 80% CI minimum)
+Ruff:  0 issues — 203 files
+Mypy:  0 issues — 203 files
+Admin: npm run build — green
 ```
 
 Run: `pytest --cov=app --cov-report=term-missing`
 
+Known low-coverage module: `workflow/service.py` at 35%.
+
 ---
 
-## Known gaps / next steps
+## Known gaps / blockers
 
-### To get to 95%
+### Blockers before real production deployment
+
+1. **Push + CI** — Branch is 4 commits ahead of `origin/main`; CI not run on current code.
+2. **pgvector** — Not installed; RAG vector search is broken (fallback to `double precision[]`).
+3. **Ollama** — Not deployed; RAG, Vision, Agent return empty/503 without it.
+4. **Redis** — Not deployed; rate limiting fails open with ~1 s latency per request.
+5. **Stripe e2e** — `BILLING_PROVIDER=stripe` path never exercised against real Stripe API.
+6. **Secrets management** — K8s `secrets.example.yaml` template only; no real injection workflow.
+7. **Staging environment** — No deployment target exists.
+
+### Path to 95% demo-ready
 
 1. **Screenshots** — Start the full stack (Postgres + Ollama + backend + admin) and capture
    screenshots of each console page with real data flowing. Add to `docs/screenshots/`.
-
-2. **Stripe integration test** — Set `BILLING_PROVIDER=stripe` with a Stripe test key and
-   verify the checkout → webhook → activate flow end-to-end.
-
-3. **Ollama e2e smoke** — Run `scripts/_verify_rag_pipeline.py` against a live Ollama instance
-   to confirm embedding → retrieval → answer round-trip works.
-
-4. **Production JWT secret** — Document the `secrets.token_hex(32)` generation in runbooks.
+2. **Stripe test-mode** — Set `BILLING_PROVIDER=stripe` with a Stripe test key and verify
+   the checkout → webhook → activate flow.
+3. **Ollama e2e** — Run `scripts/_verify_rag_pipeline.py` against a live Ollama instance.
+4. **workflow/service.py** — Bring coverage from 35% to ≥ 70%.
 
 ### Resolved this session
 

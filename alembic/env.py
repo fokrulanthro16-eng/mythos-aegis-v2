@@ -15,14 +15,20 @@ import os
 from logging.config import fileConfig
 from typing import Any
 
-from alembic import context
 from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
-# ── Model imports (side-effect: registers tables with Base.metadata) ─────────
+from alembic import context
 from app.db.base import Base
 from app.db.models import Order, Product, User  # noqa: F401
+
+# DB_SSL_REQUIRE=true is needed for TLS-only hosts (Supabase, RDS, Cloud SQL).
+_ssl_connect_args: dict[str, str] = (
+    {"ssl": "require"}
+    if os.environ.get("DB_SSL_REQUIRE", "").lower() == "true"
+    else {}
+)
 
 # ── Alembic config object ─────────────────────────────────────────────────────
 alembic_cfg = context.config
@@ -75,6 +81,7 @@ async def run_async_migrations() -> None:
         section,
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
+        connect_args=_ssl_connect_args,
     )
     async with connectable.connect() as connection:
         await connection.run_sync(do_run_migrations)

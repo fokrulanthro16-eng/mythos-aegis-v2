@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from typing import Any
 from uuid import UUID
 
@@ -9,11 +10,17 @@ from sqlalchemy.orm import Mapped, mapped_column
 from app.db.base import Base
 from app.domain.common import TenantMixin, TimestampMixin, UUIDPrimaryKeyMixin
 
-# Use PostgreSQL ARRAY(Float) for portability — works without the pgvector
-# extension.  Similarity search is done in Python (see repository.py).
-# When pgvector is available in the environment, the migration can upgrade
-# the column to vector(768) and enable index-accelerated ANN search.
-_EMBEDDING_COL_TYPE: Any = ARRAY(Float)
+# Embedding column type is selected at import time from the environment:
+#   USE_PGVECTOR=true  → pgvector vector(768); requires pgvector extension on
+#                        the database and migration a1b2c3d4e5f6 fully applied.
+#   USE_PGVECTOR=false → ARRAY(Float); works on any PostgreSQL installation.
+#                        Similarity search falls back to numpy in Python.
+if os.environ.get("USE_PGVECTOR", "false").lower() == "true":
+    from pgvector.sqlalchemy import Vector
+
+    _EMBEDDING_COL_TYPE: Any = Vector(768)
+else:
+    _EMBEDDING_COL_TYPE = ARRAY(Float)
 
 
 class DocumentChunk(UUIDPrimaryKeyMixin, TenantMixin, TimestampMixin, Base):

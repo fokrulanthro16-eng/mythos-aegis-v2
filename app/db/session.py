@@ -5,6 +5,10 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 
 from app.core.config import settings
 
+# TLS is required for hosted databases (Supabase, RDS, Cloud SQL).
+# Set DB_SSL_REQUIRE=true in .env when connecting to such hosts.
+_connect_args = {"ssl": "require"} if settings.DB_SSL_REQUIRE else {}
+
 engine = create_async_engine(
     settings.DATABASE_URL,
     pool_pre_ping=True,
@@ -12,6 +16,7 @@ engine = create_async_engine(
     max_overflow=20,
     pool_recycle=3600,
     echo=settings.APP_ENV == "development",
+    connect_args=_connect_args,
 )
 
 async_session_factory: async_sessionmaker[AsyncSession] = async_sessionmaker(
