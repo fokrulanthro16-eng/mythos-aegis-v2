@@ -15,8 +15,7 @@ from app.vision.providers.base import BaseVisionProvider, VisionAnalysisResult
 logger = logging.getLogger(__name__)
 
 _GEMINI_URL = (
-    "https://generativelanguage.googleapis.com/v1beta/models"
-    "/{model}:generateContent"
+    "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
 )
 
 _STRUCTURED_PROMPT = (
