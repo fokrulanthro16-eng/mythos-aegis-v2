@@ -54,6 +54,7 @@ DOC = (
 
 
 def make_token() -> str:
+    now = int(time.time())
     tenant_id = str(uuid4())
     payload = {
         "sub": str(uuid4()),
@@ -62,7 +63,8 @@ def make_token() -> str:
         "aud": settings.JWT_AUDIENCE,
         "permissions": ["rag.upload", "rag.search", "rag.ask"],
         "roles": ["user"],
-        "exp": int(time.time()) + 7200,
+        "iat": now,
+        "exp": now + 7200,
     }
     return jwt.encode(payload, settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM)
 
@@ -71,7 +73,7 @@ def wait_ready(timeout: int = 30) -> bool:
     deadline = time.time() + timeout
     while time.time() < deadline:
         try:
-            r = urllib.request.urlopen(f"{BASE}/api/v1/health/ready", timeout=2)
+            r = urllib.request.urlopen(f"{BASE}/health/ready", timeout=2)
             if r.status == 200:
                 return True
         except Exception:
@@ -99,7 +101,16 @@ def main() -> int:
     results["server_ready"] = ready
     if not ready:
         print(f"{F} server_ready: uvicorn did not become ready within 30s")
-        stderr_out = proc.stderr.read(2000) if proc.stderr else b""
+        if proc.stderr:
+            import select as _sel
+            # Non-blocking drain — avoid blocking on empty stderr pipe
+            try:
+                ready_fds = _sel.select([proc.stderr], [], [], 0.5)[0]
+                stderr_out = proc.stderr.read(2000) if ready_fds else b"(no stderr output)"
+            except Exception:
+                stderr_out = b"(stderr unreadable)"
+        else:
+            stderr_out = b""
         print("  stderr:", stderr_out.decode(errors="replace")[:500])
         proc.terminate()
         return 1
@@ -107,7 +118,7 @@ def main() -> int:
 
     try:
         # ── Health check ──────────────────────────────────────────────────────
-        r = requests.get(f"{BASE}/api/v1/health/ready", timeout=5)
+        r = requests.get(f"{BASE}/health/ready", timeout=5)
         ok = r.status_code == 200 and r.json().get("status") == "ready"
         results["health_ready"] = ok
         print(f"{P if ok else F} health_ready: {r.json()}")
@@ -115,7 +126,7 @@ def main() -> int:
         # ── RAG upload ────────────────────────────────────────────────────────
         print("Uploading document (Ollama will embed) …")
         r = requests.post(
-            f"{BASE}/api/v1/rag/upload",
+            f"{BASE}/v1/rag/upload",
             headers=headers,
             files={"file": ("jwt_security_guide.txt", io.BytesIO(DOC.encode()), "text/plain")},
             data={"project_id": PROJECT_ID},
@@ -139,7 +150,7 @@ def main() -> int:
         ]
         for q in queries:
             r2 = requests.post(
-                f"{BASE}/api/v1/rag/search",
+                f"{BASE}/v1/rag/search",
                 headers={**headers, "Content-Type": "application/json"},
                 json={"query": q, "project_id": PROJECT_ID, "top_k": 3},
                 timeout=60,
