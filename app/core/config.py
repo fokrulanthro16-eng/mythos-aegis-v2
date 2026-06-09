@@ -71,6 +71,11 @@ class Settings(BaseSettings):
     VISION_MAX_IMAGE_SIZE_BYTES: int = 20 * 1024 * 1024
     VISION_ANALYSIS_TIMEOUT: float = 120.0
 
+    # ── Gemini Cloud Vision ───────────────────────────────────────────────────
+    # Leave empty to disable; set in .env to enable cloud vision.
+    GEMINI_API_KEY: str = ""
+    GEMINI_MODEL: str = "gemini-2.0-flash"
+
     # ── Agent Runtime ─────────────────────────────────────────────────────────
     AGENT_MODEL: str = "qwen2.5:1.5b"
     AGENT_MAX_ITERATIONS: int = 5

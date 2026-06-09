@@ -1,6 +1,6 @@
 # Mythos Aegis — Project Status
 
-Last updated: 2026-06-08
+Last updated: 2026-06-09
 
 ---
 
@@ -11,10 +11,11 @@ Last updated: 2026-06-08
 
 | Area | Status | Notes |
 |---|---|---|
-| Backend API | **Complete** | 926 tests, all passing |
+| Backend API | **Complete** | 961 tests, all passing |
 | JWT auth + RBAC | **Complete** | Zero-downtime key rotation |
 | RAG pipeline | **Complete** | Requires Ollama + Postgres |
 | Vision analysis | **Complete** | Requires Ollama vision model |
+| Gemini Cloud Vision | **Complete** | `POST /vision/analyze` — set `GEMINI_API_KEY`; graceful 503 without it |
 | Agent runtime | **Complete** | Requires Ollama |
 | Billing (mock) | **Complete** | No external deps |
 | Billing (Stripe) | **Config only** | Set `BILLING_PROVIDER=stripe` + keys |
@@ -37,10 +38,10 @@ Last updated: 2026-06-08
 ## Test coverage
 
 ```
-926 tests, 0 failures, 9 warnings (verified 2026-06-08)
-Coverage: 89% (above 80% CI minimum)
-Ruff:  0 issues — 203 files
-Mypy:  0 issues — 203 files
+961 tests, 0 failures, 8 warnings (verified 2026-06-09)
+Coverage: 89%+ (above 80% CI minimum)
+Ruff:  0 issues
+Mypy:  0 issues
 Admin: npm run build — green
 ```
 

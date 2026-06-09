@@ -13,6 +13,7 @@ Permissions:
 
 from __future__ import annotations
 
+import json as _json
 import logging
 from typing import Annotated
 from uuid import UUID
@@ -28,12 +29,19 @@ from app.core.exceptions import (
 )
 from app.core.security_context import SecurityContext
 from app.db.session import get_session
-from app.vision.schemas import OCRResponse, PDFExtractResponse, VisionAnalyzeResponse
+from app.vision.providers.gemini_vision import GeminiVisionProvider
+from app.vision.schemas import (
+    GeminiAnalyzeResponse,
+    OCRResponse,
+    PDFExtractResponse,
+    VisionAnalyzeResponse,
+)
 from app.vision.service import VisionService
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/v1/vision", tags=["vision"])
+demo_router = APIRouter(prefix="/vision", tags=["vision"])
 
 _SecurityCtx = Annotated[SecurityContext, Depends(get_security_context)]
 _DbSession = Annotated[AsyncSession, Depends(get_session)]
@@ -175,3 +183,43 @@ async def extract_document(
         raise HTTPException(status_code=415, detail=exc.message) from exc
     except ImageTooLargeError as exc:
         raise HTTPException(status_code=413, detail=exc.message) from exc
+
+
+# ── POST /vision/analyze (Gemini Cloud Vision) ────────────────────────────────
+
+
+@demo_router.post("/analyze", response_model=GeminiAnalyzeResponse, status_code=200)
+async def gemini_analyze_image(
+    file: UploadFile,
+    ctx: _SecurityCtx,
+) -> GeminiAnalyzeResponse:
+    """Analyze an image with Gemini Cloud Vision.
+
+    Returns structured JSON: summary, detected_objects, and observations.
+    Requires GEMINI_API_KEY to be configured.  Permission: vision.analyze
+    """
+    _require(ctx, _PERM_ANALYZE)
+
+    file_bytes = await file.read()
+    mime_type = file.content_type or "image/jpeg"
+
+    provider = GeminiVisionProvider()
+    try:
+        result = await provider.analyze(file_bytes, prompt="", mime_type=mime_type)
+    except VisionProviderUnavailableError as exc:
+        logger.warning("vision.gemini.unavailable: %s", exc.message)
+        raise HTTPException(status_code=503, detail=exc.message) from exc
+
+    try:
+        data = _json.loads(result.content)
+        return GeminiAnalyzeResponse(
+            summary=str(data.get("summary", "")),
+            detected_objects=list(data.get("detected_objects", [])),
+            observations=list(data.get("observations", [])),
+        )
+    except (_json.JSONDecodeError, AttributeError, TypeError) as exc:
+        logger.warning("vision.gemini.parse_error: %s", exc)
+        raise HTTPException(
+            status_code=502,
+            detail="Gemini returned an unexpected response format.",
+        ) from exc

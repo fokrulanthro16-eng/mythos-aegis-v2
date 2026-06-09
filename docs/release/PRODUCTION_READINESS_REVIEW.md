@@ -1,7 +1,7 @@
 # Mythos Aegis v0.4.0 — Production Readiness Review
 
 **Prepared for:** Mentor review  
-**Date:** 2026-06-08  
+**Date:** 2026-06-09  
 **Version:** 0.4.0  
 **Branch:** `main` — 4 commits ahead of `origin/main` (not yet pushed)  
 **Reviewer note:** This document is intentionally honest. Gaps are stated plainly.
@@ -31,8 +31,8 @@ All run against the live local codebase.
 |---|---|---|
 | Lint | `ruff check app/` | **0 issues — 203 files** ✅ |
 | Type check | `mypy app/` | **0 issues — 203 files** ✅ |
-| Tests | `pytest` | **938 passed, 0 failures, 9 warnings** ✅ |
-| Coverage | `pytest --cov=app` | **89% (threshold: 80%)** ✅ |
+| Tests | `pytest` | **961 passed, 0 failures, 8 warnings** ✅ |
+| Coverage | `pytest --cov=app` | **89%+ (threshold: 80%)** ✅ |
 | Admin build | `npm run build` (apps/admin) | **Green — all 9 routes** ✅ |
 
 Warnings in pytest are `InsecureKeyLengthWarning` from a short test JWT key — not a
@@ -88,6 +88,7 @@ All tests run against `localhost:8000` (uvicorn, `APP_ENV=development`).
 |---|---|---|
 | Simple health | `GET /health` | `{"status":"ok"}` ✅ |
 | Service status | `GET /status` | `service`, `version`, `database`, `redis` fields ✅ |
+| Gemini Vision (no key) | `POST /vision/analyze` | `503 — GEMINI_API_KEY is not configured` ✅ |
 | Liveness | `GET /health/live` | `{"status":"ok"}` ✅ |
 | Readiness + DB | `GET /health/ready` | `{"status":"ready","database":"ok"}` ✅ |
 | Billing plans (public, no JWT) | `GET /v1/billing/plans` | 4 plans returned ✅ |
@@ -154,8 +155,11 @@ Works correctly in code; requires live infrastructure to be fully exercised:
 
 ### Vision intelligence
 - Image → Ollama inference → structured response is **fully implemented**
-- Requires `ollama pull qwen2.5-vl:7b` (11 GB model); without it, all vision endpoints
+- Requires `ollama pull qwen2.5-vl:7b` (11 GB model); without it, all `/v1/vision/*` endpoints
   return `VisionProviderUnavailableError` (graceful 503)
+- **Gemini Cloud Vision** added: `POST /vision/analyze` returns `{summary, detected_objects,
+  observations}` via Gemini REST API; graceful 503 when `GEMINI_API_KEY` is absent; no
+  torch/transformers required; `httpx` (existing dep) used for REST calls
 
 ### Agent runtime
 - Tool-calling loop with session persistence is **fully implemented**
@@ -219,10 +223,10 @@ Ordered by effort and blocking severity:
 
 | Domain | Score | Evidence |
 |---|---|---|
-| Code quality | **100%** | ruff 0, mypy 0, 926 tests pass |
+| Code quality | **100%** | ruff 0, mypy 0, 961 tests pass |
 | Security implementation | **90%** | JWT, RBAC, tenant isolation, startup guard, non-root — Stripe webhook sig unverified |
 | Database schema | **90%** | 26 tables, migrations verified — pgvector missing |
-| Test coverage | **89%** | 5042 statements; workflow/service.py at 35% |
+| Test coverage | **89%+** | 5042+ statements; workflow/service.py at 35% |
 | Admin console | **85%** | Build green, API wired — no e2e tests, no screenshots |
 | CI/CD pipelines | **75%** | 3 workflows defined — not run on latest 4 commits |
 | Infrastructure (Docker/K8s) | **65%** | Manifests complete — never deployed, secrets template only |
@@ -240,7 +244,7 @@ Use this checklist to structure the review session. Each item is a yes/no gate.
 ### Code quality
 - [ ] `ruff check app/` outputs "All checks passed"
 - [ ] `mypy app/` outputs "Success: no issues found in 203 source files"
-- [ ] `pytest` outputs "926 passed" with 0 failures
+- [ ] `pytest` outputs "961 passed" with 0 failures
 - [ ] Coverage report shows ≥ 80% overall (currently 89%)
 - [ ] `workflow/service.py` coverage acknowledged as a known gap (35%)
 

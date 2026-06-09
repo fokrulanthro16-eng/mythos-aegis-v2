@@ -31,6 +31,7 @@ from app.rag.routes import router as rag_router
 from app.rate_limit.limiter import close_redis
 from app.rate_limit.middleware import RateLimitMiddleware
 from app.response.schemas import ResponsePayload
+from app.vision.routes import demo_router as vision_demo_router
 from app.vision.routes import router as vision_router
 from app.workflow.routes import router as workflow_router
 
@@ -84,6 +85,7 @@ app.include_router(ops_router)
 app.include_router(health_router)
 app.include_router(rag_router)
 app.include_router(vision_router)
+app.include_router(vision_demo_router)
 app.include_router(agent_router)
 app.include_router(workflow_router)
 app.include_router(billing_router)

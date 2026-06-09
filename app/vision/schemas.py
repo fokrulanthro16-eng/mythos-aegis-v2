@@ -44,3 +44,14 @@ class OCRResponse(BaseModel):
     text: str
     model: str
     char_count: int = Field(description="Number of characters extracted")
+
+
+# ── Gemini Cloud Vision ───────────────────────────────────────────────────────
+
+
+class GeminiAnalyzeResponse(BaseModel):
+    """Structured response from POST /vision/analyze (Gemini Cloud Vision)."""
+
+    summary: str
+    detected_objects: list[str]
+    observations: list[str]
