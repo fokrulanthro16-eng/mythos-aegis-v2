@@ -36,6 +36,7 @@ _PUBLIC_PATHS: frozenset[str] = frozenset(
         "/health/live",
         "/health/ready",
         "/health/startup",
+        "/status",
         "/intent/parse",
         "/metrics",
         "/docs",

@@ -12,7 +12,6 @@ from app.agent.routes import router as agent_router
 from app.auth.dependencies import get_security_context
 from app.auth.middleware import JWTAuthMiddleware
 from app.billing.routes import router as billing_router
-from app.core.config import settings
 from app.core.errors import (
     IntentParseError,
     SecurityViolationError,
@@ -23,6 +22,7 @@ from app.core.logging import configure_logging
 from app.core.security_context import SecurityContext
 from app.intent.parser import parse
 from app.intent.schemas import IntentParseResult
+from app.observability.health import ops_router
 from app.observability.health import router as health_router
 from app.observability.middleware import ObservabilityMiddleware
 from app.observability.tracing import setup_tracing
@@ -80,6 +80,7 @@ app.add_middleware(
 app.add_exception_handler(IntentParseError, intent_parse_error_handler)  # type: ignore[arg-type]
 app.add_exception_handler(SecurityViolationError, security_violation_handler)  # type: ignore[arg-type]
 
+app.include_router(ops_router)
 app.include_router(health_router)
 app.include_router(rag_router)
 app.include_router(vision_router)
@@ -118,10 +119,6 @@ class RouteRequest(BaseModel):
 # Endpoints
 # ---------------------------------------------------------------------------
 
-
-@app.get("/health")
-async def health() -> dict[str, str]:
-    return {"status": "ok", "env": settings.APP_ENV}
 
 
 @app.get("/metrics", include_in_schema=False)

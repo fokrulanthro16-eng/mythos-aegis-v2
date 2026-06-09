@@ -44,6 +44,7 @@ _EXEMPT_PATHS: frozenset[str] = frozenset(
         "/health/live",
         "/health/ready",
         "/health/startup",
+        "/status",
         "/metrics",
         "/docs",
         "/openapi.json",

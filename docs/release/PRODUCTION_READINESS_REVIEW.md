@@ -31,7 +31,7 @@ All run against the live local codebase.
 |---|---|---|
 | Lint | `ruff check app/` | **0 issues — 203 files** ✅ |
 | Type check | `mypy app/` | **0 issues — 203 files** ✅ |
-| Tests | `pytest` | **926 passed, 0 failures, 9 warnings** ✅ |
+| Tests | `pytest` | **938 passed, 0 failures, 9 warnings** ✅ |
 | Coverage | `pytest --cov=app` | **89% (threshold: 80%)** ✅ |
 | Admin build | `npm run build` (apps/admin) | **Green — all 9 routes** ✅ |
 
@@ -86,6 +86,8 @@ All tests run against `localhost:8000` (uvicorn, `APP_ENV=development`).
 
 | Test | Endpoint | Result |
 |---|---|---|
+| Simple health | `GET /health` | `{"status":"ok"}` ✅ |
+| Service status | `GET /status` | `service`, `version`, `database`, `redis` fields ✅ |
 | Liveness | `GET /health/live` | `{"status":"ok"}` ✅ |
 | Readiness + DB | `GET /health/ready` | `{"status":"ready","database":"ok"}` ✅ |
 | Billing plans (public, no JWT) | `GET /v1/billing/plans` | 4 plans returned ✅ |
