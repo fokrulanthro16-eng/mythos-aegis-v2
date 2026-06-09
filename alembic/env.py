@@ -13,8 +13,10 @@ from __future__ import annotations
 import asyncio
 import os
 from logging.config import fileConfig
+from pathlib import Path
 from typing import Any
 
+from dotenv import load_dotenv
 from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
@@ -22,6 +24,10 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 from alembic import context
 from app.db.base import Base
 from app.db.models import Order, Product, User  # noqa: F401
+
+# Load .env so DATABASE_URL / DB_SSL_REQUIRE are available when alembic is
+# invoked directly from the shell (not through the FastAPI app startup path).
+load_dotenv(Path(__file__).parent.parent / ".env", override=False)
 
 # DB_SSL_REQUIRE=true is needed for TLS-only hosts (Supabase, RDS, Cloud SQL).
 _ssl_connect_args: dict[str, str] = (

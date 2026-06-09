@@ -41,23 +41,26 @@ Expected output: one row with `vector` and a version string (≥0.5.0).
 
 ## Step 3: Get the Connection String
 
-1. Go to **Settings → Database**
-2. Under **Connection string**, select **URI** and copy the **Direct connection** string
-   (not the transaction pooler — Alembic migrations require a direct connection)
-3. The URL looks like:
+> **Important:** Use the **Session Pooler** connection string, not the Direct connection.
+> Supabase's Direct connection is IPv6-only and unreachable from most Windows machines.
+> The Session Pooler uses IPv4 and is compatible with Alembic DDL migrations.
+
+1. Go to **Settings → Database → Connection Pooling**
+2. Select **Session mode** and copy the URI
+3. It looks like (the prefix digit after `aws-` may be `0` or `1` depending on your project region):
 
 ```
-postgresql://postgres.[ref]:[PASSWORD]@aws-0-[region].pooler.supabase.com:5432/postgres
+postgresql://postgres.[ref]:[PASSWORD]@aws-1-[region].pooler.supabase.com:5432/postgres
 ```
 
 4. Replace the driver prefix for asyncpg:
 
 ```
-postgresql+asyncpg://postgres.[ref]:[PASSWORD]@aws-0-[region].pooler.supabase.com:5432/postgres
+postgresql+asyncpg://postgres.[ref]:[PASSWORD]@aws-1-[region].pooler.supabase.com:5432/postgres
 ```
 
-> **Note:** Use the **direct** port 5432, not the pooler port 6543.
-> Migrations use DDL transactions that are incompatible with PgBouncer transaction-mode pooling.
+> **Note:** The exact pooler host (`aws-0-*` vs `aws-1-*`) is shown in your dashboard.
+> Do not guess the region — copy it directly from Settings → Database → Connection Pooling.
 
 ---
 
