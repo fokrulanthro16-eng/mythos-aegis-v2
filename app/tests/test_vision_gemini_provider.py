@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -37,7 +38,7 @@ _VALID_GEMINI_RESPONSE = {
 }
 
 
-def _make_http_mock(status_code: int, json_data: dict) -> MagicMock:
+def _make_http_mock(status_code: int, json_data: dict[str, Any]) -> MagicMock:
     mock_resp = MagicMock()
     mock_resp.status_code = status_code
     mock_resp.json.return_value = json_data
@@ -80,7 +81,7 @@ _SETTINGS_PATH = "app.vision.providers.gemini_vision.settings.GEMINI_API_KEY"
 
 
 @pytest.mark.asyncio
-async def test_analyze_uses_settings_key_when_not_passed(monkeypatch) -> None:
+async def test_analyze_uses_settings_api_key(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(_SETTINGS_PATH, "")
     p = GeminiVisionProvider()
     with pytest.raises(VisionProviderUnavailableError):
@@ -157,7 +158,7 @@ async def test_analyze_raises_on_500() -> None:
 
 @pytest.mark.asyncio
 async def test_analyze_raises_on_empty_candidates() -> None:
-    bad_response = {"candidates": []}
+    bad_response: dict[str, Any] = {"candidates": []}
     mock_cls = _make_http_mock(200, bad_response)
     with patch("app.vision.providers.gemini_vision.httpx.AsyncClient", mock_cls):
         p = GeminiVisionProvider(api_key=_FAKE_KEY, model=_FAKE_MODEL)
