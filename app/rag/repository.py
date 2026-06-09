@@ -13,6 +13,7 @@ from uuid import UUID, uuid4
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.db.models.document import Document, DocumentStatus
 from app.db.models.document_chunk import DocumentChunk
 
@@ -110,10 +111,60 @@ class DocumentChunkRepository:
         Returns (DocumentChunk, filename) tuples — raw embeddings are never
         included in the return value.
 
-        Similarity is computed in Python using numpy cosine similarity so that
-        no pgvector extension is required.  For large corpora, a follow-up
-        migration can switch to the pgvector <=> operator and an IVFFlat index.
+        When USE_PGVECTOR=true the search runs as a single SQL ORDER BY using
+        the pgvector <=> cosine-distance operator and the IVFFlat index.
+        When USE_PGVECTOR=false (local PG without pgvector) all embeddings are
+        fetched and ranked in Python via numpy.
         """
+        if settings.USE_PGVECTOR:
+            return await self._search_pgvector(
+                tenant_id=tenant_id,
+                project_id=project_id,
+                query_embedding=query_embedding,
+                top_k=top_k,
+            )
+        return await self._search_numpy(
+            tenant_id=tenant_id,
+            project_id=project_id,
+            query_embedding=query_embedding,
+            top_k=top_k,
+        )
+
+    async def _search_pgvector(
+        self,
+        *,
+        tenant_id: UUID,
+        project_id: UUID,
+        query_embedding: list[float],
+        top_k: int,
+    ) -> list[tuple[DocumentChunk, str]]:
+        from pgvector.sqlalchemy import Vector
+        from sqlalchemy import cast
+
+        query_vector = cast(query_embedding, Vector(len(query_embedding)))
+        stmt = (
+            select(DocumentChunk, Document.filename)
+            .join(Document, DocumentChunk.document_id == Document.id)
+            .where(
+                DocumentChunk.tenant_id == tenant_id,
+                DocumentChunk.project_id == project_id,
+                DocumentChunk.embedding.isnot(None),
+                Document.deleted_at.is_(None),
+            )
+            .order_by(DocumentChunk.embedding.op("<=>")(query_vector))
+            .limit(top_k)
+        )
+        result = await self._session.execute(stmt)
+        return [(chunk, filename) for chunk, filename in result.all()]
+
+    async def _search_numpy(
+        self,
+        *,
+        tenant_id: UUID,
+        project_id: UUID,
+        query_embedding: list[float],
+        top_k: int,
+    ) -> list[tuple[DocumentChunk, str]]:
         import numpy as np
 
         stmt = (
