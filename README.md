@@ -390,6 +390,30 @@ OTEL_SERVICE_NAME=mythos-aegis
 
 ---
 
+## Demo Screenshots
+
+### Health Endpoint
+
+![Health endpoint](docs/screenshots/health-endpoint.png)
+
+### Status Endpoint
+
+![Status endpoint](docs/screenshots/status-endpoint.png)
+
+### RAG Query Result with Citations
+
+![RAG query result](docs/screenshots/rag-query-result.png)
+
+### Supabase pgvector Setup
+
+![Supabase pgvector setup](docs/screenshots/supabase-pgvector-setup.png)
+
+### Vision Analyze Fallback Mode
+
+![Vision analyze fallback](docs/screenshots/vision-analyze-fallback.png)
+
+---
+
 ## Release Checklist
 
 - [ ] All three CI workflows pass (CI, Docker, Security)
