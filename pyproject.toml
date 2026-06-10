@@ -8,7 +8,7 @@ version = "0.4.0"
 description = "Mythos Aegis – Multi-tenant AI SaaS platform with RAG, Vision, Agent, Billing, and Workflow"
 requires-python = ">=3.12"
 dependencies = [
-    "fastapi>=0.115.0",
+    "fastapi>=0.136.0",
     "uvicorn[standard]>=0.30.0",
     "pydantic>=2.7.0",
     "pydantic-settings>=2.3.0",
@@ -26,7 +26,7 @@ dependencies = [
     "redis[hiredis]>=5.0.0",
     "pypdf>=4.0.0",
     "httpx>=0.27.0",
-    "python-multipart>=0.0.9",
+    "python-multipart>=0.0.27",
     "numpy>=1.26.0",
 ]
 
