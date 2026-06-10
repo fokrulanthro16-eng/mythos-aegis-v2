@@ -64,10 +64,16 @@ def _make_pdf_bytes(text: str = _PDF_TEXT) -> bytes:
     )
 
     return (
-        header + catalog + pages_obj + page_obj
-        + content_header + content + content_footer
+        header
+        + catalog
+        + pages_obj
+        + page_obj
+        + content_header
+        + content
+        + content_footer
         + xref
     )
+
 
 # ── supported_extensions ─────────────────────────────────────────────────────
 
