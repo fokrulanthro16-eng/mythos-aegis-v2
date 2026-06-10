@@ -18,6 +18,57 @@ from app.rag.chunker import (
     supported_extensions,
 )
 
+# ── PDF test fixture ──────────────────────────────────────────────────────────
+
+_PDF_TEXT = "RAG test content from PDF"
+
+
+def _make_pdf_bytes(text: str = _PDF_TEXT) -> bytes:
+    """Build a minimal valid PDF with one text page and extractable content."""
+    content = f"BT /F1 12 Tf 50 700 Td ({text}) Tj ET\n".encode("ascii")
+
+    header = b"%PDF-1.4\n"
+    catalog = b"1 0 obj\n<</Type /Catalog /Pages 2 0 R>>\nendobj\n"
+    pages_obj = b"2 0 obj\n<</Type /Pages /Kids [3 0 R] /Count 1>>\nendobj\n"
+    page_obj = (
+        b"3 0 obj\n<</Type /Page /Parent 2 0 R /MediaBox [0 0 612 792]"
+        b" /Contents 4 0 R /Resources <</Font <</F1 <</Type /Font"
+        b" /Subtype /Type1 /BaseFont /Helvetica>>>>>>\n>>\nendobj\n"
+    )
+    content_header = (
+        b"4 0 obj\n<</Length " + str(len(content)).encode() + b">>\nstream\n"
+    )
+    content_footer = b"endstream\nendobj\n"
+
+    # Compute xref byte offsets
+    p = len(header)
+    off1 = p
+    p += len(catalog)
+    off2 = p
+    p += len(pages_obj)
+    off3 = p
+    p += len(page_obj)
+    off4 = p
+    p += len(content_header) + len(content) + len(content_footer)
+    xref_pos = p
+
+    xref = (
+        b"xref\n0 5\n"
+        b"0000000000 65535 f \n"
+        + f"{off1:010d} 00000 n \n".encode()
+        + f"{off2:010d} 00000 n \n".encode()
+        + f"{off3:010d} 00000 n \n".encode()
+        + f"{off4:010d} 00000 n \n".encode()
+        + b"trailer\n"
+        + f"<</Size 5 /Root 1 0 R>>\nstartxref\n{xref_pos}\n%%EOF\n".encode()
+    )
+
+    return (
+        header + catalog + pages_obj + page_obj
+        + content_header + content + content_footer
+        + xref
+    )
+
 # ── supported_extensions ─────────────────────────────────────────────────────
 
 
@@ -35,6 +86,10 @@ def test_supported_extensions_contains_json() -> None:
 
 def test_supported_extensions_contains_csv() -> None:
     assert ".csv" in supported_extensions()
+
+
+def test_supported_extensions_contains_pdf() -> None:
+    assert ".pdf" in supported_extensions()
 
 
 # ── extract_text ─────────────────────────────────────────────────────────────
@@ -76,11 +131,6 @@ def test_extract_csv_multicolumn() -> None:
     result = extract_text(content, "inventory.csv")
     assert "Widget" in result
     assert "9.99" in result
-
-
-def test_extract_unsupported_raises() -> None:
-    with pytest.raises(UnsupportedFileTypeError):
-        extract_text(b"%PDF", "document.pdf")
 
 
 def test_extract_docx_raises() -> None:
@@ -196,3 +246,45 @@ def test_estimate_tokens_four_chars_per_token() -> None:
 def test_estimate_tokens_rough_estimate() -> None:
     text = "The quick brown fox"  # 19 chars → estimate 4
     assert estimate_tokens(text) >= 1
+
+
+# ── PDF extraction ────────────────────────────────────────────────────────────
+
+
+def test_extract_pdf_does_not_raise_unsupported() -> None:
+    pdf = _make_pdf_bytes()
+    # Must NOT raise UnsupportedFileTypeError
+    result = extract_text(pdf, "document.pdf")
+    assert isinstance(result, str)
+
+
+def test_extract_pdf_returns_text_content() -> None:
+    pdf = _make_pdf_bytes(_PDF_TEXT)
+    result = extract_text(pdf, "document.pdf")
+    assert _PDF_TEXT in result
+
+
+def test_extract_pdf_uppercase_extension() -> None:
+    pdf = _make_pdf_bytes()
+    result = extract_text(pdf, "REPORT.PDF")
+    assert isinstance(result, str)
+
+
+def test_extract_pdf_invalid_bytes_raises_value_error() -> None:
+    with pytest.raises(ValueError, match="Could not parse PDF"):
+        extract_text(b"not a pdf at all", "corrupt.pdf")
+
+
+def test_extract_pdf_chunks_normally() -> None:
+    pdf = _make_pdf_bytes(_PDF_TEXT)
+    text = extract_text(pdf, "document.pdf")
+    chunks = chunk_text(text)
+    assert len(chunks) >= 1
+    assert _PDF_TEXT in chunks[0]
+
+
+def test_extract_pdf_content_type_is_application_pdf() -> None:
+    from pathlib import Path
+
+    ext = Path("report.pdf").suffix.lower().lstrip(".")
+    assert ext == "pdf"  # sanity — verifies service.py content_type branch

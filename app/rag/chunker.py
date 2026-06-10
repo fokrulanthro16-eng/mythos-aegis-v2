@@ -9,12 +9,15 @@ import csv
 import hashlib
 import io
 import json
+import logging
 import re
 from pathlib import Path
 
 from app.core.exceptions import UnsupportedFileTypeError
 
-_SUPPORTED_EXTENSIONS = frozenset({".txt", ".md", ".json", ".csv"})
+logger = logging.getLogger(__name__)
+
+_SUPPORTED_EXTENSIONS = frozenset({".txt", ".md", ".json", ".csv", ".pdf"})
 
 # 4 characters ≈ 1 token (rough estimate consistent with AI Gateway)
 _CHARS_PER_TOKEN = 4
@@ -46,6 +49,30 @@ def extract_text(content: bytes, filename: str) -> str:
         except json.JSONDecodeError as exc:
             raise ValueError(f"Invalid JSON content: {exc}") from exc
         return json.dumps(data, indent=2, ensure_ascii=False)
+
+    if ext == ".pdf":
+        try:
+            import pypdf
+        except ImportError as exc:
+            raise RuntimeError(
+                "pypdf is required for PDF text extraction. "
+                "Install with: pip install pypdf"
+            ) from exc
+
+        try:
+            pdf_reader = pypdf.PdfReader(io.BytesIO(content))
+        except Exception as exc:
+            raise ValueError(f"Could not parse PDF: {exc}") from exc
+
+        pages: list[str] = []
+        for i, page in enumerate(pdf_reader.pages):
+            try:
+                pages.append(page.extract_text() or "")
+            except Exception:
+                logger.warning("rag.chunker.pdf_page_error page_index=%d", i)
+                pages.append("")
+
+        return "\n\n".join(p for p in pages if p.strip())
 
     # .csv
     text = content.decode("utf-8", errors="replace")

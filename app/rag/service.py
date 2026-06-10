@@ -137,7 +137,10 @@ class RAGService:
         from pathlib import Path
 
         ext = Path(filename).suffix.lower().lstrip(".")
-        content_type = f"text/{ext}" if ext else "text/plain"
+        if ext == "pdf":
+            content_type = "application/pdf"
+        else:
+            content_type = f"text/{ext}" if ext else "text/plain"
 
         # Create document record (status = pending)
         doc = await self._docs.create(

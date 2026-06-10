@@ -121,7 +121,7 @@ async def test_upload_unsupported_type_returns_failure() -> None:
     ctx = _ctx()
     session = _make_session()
     svc = RAGService(session, _make_embedding_provider())
-    result = await svc.upload_document(b"%PDF", "doc.pdf", uuid4(), ctx)
+    result = await svc.upload_document(b"...", "report.docx", uuid4(), ctx)
     assert isinstance(result, Failure)
     assert isinstance(result.error, UnsupportedFileTypeError)
 

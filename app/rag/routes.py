@@ -68,7 +68,7 @@ async def upload_document(
 ) -> DocumentUploadResponse:
     """Upload and index a document.
 
-    Supported file types: .txt, .md, .json, .csv
+    Supported file types: .txt, .md, .json, .csv, .pdf
     Max size: 10 MB
     Permission: rag.upload
     """
