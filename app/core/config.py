@@ -32,6 +32,12 @@ class Settings(BaseSettings):
     # Redis — used for rate limiting.  Graceful degradation when unavailable.
     REDIS_URL: str = "redis://localhost:6379/0"
 
+    # ── CORS ─────────────────────────────────────────────────────────────────
+    # Comma-separated list of allowed origins for the CORSMiddleware.
+    # Leave empty to use the local-development defaults (localhost:3000/3001).
+    # Example: ALLOWED_ORIGINS=https://admin.example.com,https://app.example.com
+    ALLOWED_ORIGINS: str = ""
+
     # OpenTelemetry — disabled by default; set OTEL_ENABLED=true in production.
     OTEL_ENABLED: bool = False
     OTEL_EXPORTER_OTLP_ENDPOINT: str = "http://localhost:4318/v1/traces"

@@ -67,17 +67,24 @@ app = FastAPI(
 #   ObservabilityMiddleware  ← sets request_id, records metrics
 #   JWTAuthMiddleware        ← validates JWT, sets security_context
 #   RateLimitMiddleware      ← innermost: reads security_context, enforces limits
+_DEV_ORIGINS = [
+    "http://localhost:3000",
+    "http://localhost:3001",
+    "http://127.0.0.1:3000",
+    "http://127.0.0.1:3001",
+]
+_allowed_origins = (
+    [o.strip() for o in settings.ALLOWED_ORIGINS.split(",") if o.strip()]
+    if settings.ALLOWED_ORIGINS.strip()
+    else _DEV_ORIGINS
+)
+
 app.add_middleware(RateLimitMiddleware)
 app.add_middleware(JWTAuthMiddleware)
 app.add_middleware(ObservabilityMiddleware)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://localhost:3001",
-        "http://127.0.0.1:3000",
-        "http://127.0.0.1:3001",
-    ],
+    allow_origins=_allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
