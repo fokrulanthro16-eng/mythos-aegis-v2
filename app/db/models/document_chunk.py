@@ -1,21 +1,24 @@
 from __future__ import annotations
 
-import os
 from typing import Any
 from uuid import UUID
 
 from sqlalchemy import ARRAY, Float, ForeignKey, Index, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
+from app.core.config import settings
 from app.db.base import Base
 from app.domain.common import TenantMixin, TimestampMixin, UUIDPrimaryKeyMixin
 
-# Embedding column type is selected at import time from the environment:
+# Embedding column type is selected at import time from settings:
 #   USE_PGVECTOR=true  → pgvector vector(768); requires pgvector extension on
 #                        the database and migration a1b2c3d4e5f6 fully applied.
 #   USE_PGVECTOR=false → ARRAY(Float); works on any PostgreSQL installation.
 #                        Similarity search falls back to numpy in Python.
-if os.environ.get("USE_PGVECTOR", "false").lower() == "true":
+#
+# settings is used (not os.environ) because pydantic-settings reads .env into
+# the Settings object but does NOT populate os.environ.
+if settings.USE_PGVECTOR:
     from pgvector.sqlalchemy import Vector
 
     _EMBEDDING_COL_TYPE: Any = Vector(768)
@@ -42,7 +45,7 @@ class DocumentChunk(UUIDPrimaryKeyMixin, TenantMixin, TimestampMixin, Base):
     content: Mapped[str] = mapped_column(Text)
     content_hash: Mapped[str] = mapped_column(String(64))
     token_estimate: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
-    # FLOAT4[] column; nullable until embedding is computed during indexing.
+    # Embedding column; nullable until embedding is computed during indexing.
     embedding: Mapped[list[float] | None] = mapped_column(
         _EMBEDDING_COL_TYPE, nullable=True, default=None
     )

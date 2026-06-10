@@ -99,8 +99,16 @@ async def search(
 
     Permission: rag.search
     """
-    svc = RAGService(session)
-    result = await svc.search(req, ctx)
+    try:
+        svc = RAGService(session)
+        result = await svc.search(req, ctx)
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.exception("rag.search.unhandled_error")
+        raise HTTPException(
+            status_code=500, detail="Search failed due to an internal error"
+        ) from exc
 
     if isinstance(result, Success):
         return result.value
@@ -119,8 +127,16 @@ async def ask(
     Permission: rag.ask
     Returns the answer plus citations for every source chunk used.
     """
-    svc = RAGService(session)
-    result = await svc.ask(req, ctx)
+    try:
+        svc = RAGService(session)
+        result = await svc.ask(req, ctx)
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.exception("rag.ask.unhandled_error")
+        raise HTTPException(
+            status_code=500, detail="Ask failed due to an internal error"
+        ) from exc
 
     if isinstance(result, Success):
         return result.value
