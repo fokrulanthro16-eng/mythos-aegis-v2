@@ -11,6 +11,7 @@ Security invariants:
 
 from __future__ import annotations
 
+import json as _json
 import logging
 from uuid import UUID, uuid4
 
@@ -20,7 +21,7 @@ from app.core.security_context import SecurityContext
 from app.db.models.vision_event import VisionEvent
 from app.vision.processor import extract_pdf_text, is_pdf_file, validate_file
 from app.vision.providers.base import BaseVisionProvider
-from app.vision.providers.ollama_vision import OllamaVisionProvider
+from app.vision.providers.factory import get_vision_provider
 from app.vision.schemas import OCRResponse, PDFExtractResponse, VisionAnalyzeResponse
 
 logger = logging.getLogger(__name__)
@@ -44,6 +45,21 @@ _SCREENSHOT_PROMPT = (
 )
 
 
+def _extract_summary(content: str, provider_name: str) -> str:
+    """Return a display-friendly summary from provider output.
+
+    Gemini returns a JSON object; extract its 'summary' key.
+    All other providers return freetext which is used as-is.
+    """
+    if provider_name == "gemini":
+        try:
+            data = _json.loads(content)
+            return str(data.get("summary", content))
+        except (_json.JSONDecodeError, AttributeError, TypeError):
+            return content
+    return content
+
+
 class VisionService:
     """Orchestrate vision analysis with tenant isolation and audit logging."""
 
@@ -53,7 +69,7 @@ class VisionService:
         provider: BaseVisionProvider | None = None,
     ) -> None:
         self._db = db_session
-        self._provider = provider or OllamaVisionProvider()
+        self._provider = provider or get_vision_provider()
 
     # ── Image analysis ────────────────────────────────────────────────────────
 
@@ -74,6 +90,9 @@ class VisionService:
         result = await self._provider.analyze(
             file_bytes, effective_prompt, mime_type=mime_type
         )
+
+        provider_name = self._provider.provider_name
+        summary = _extract_summary(result.content, provider_name)
 
         index_status: str | None = None
         document_id: UUID | None = None
@@ -99,7 +118,8 @@ class VisionService:
         )
 
         logger.info(
-            "vision.analyze tenant=%s file_type=%s output_chars=%d",
+            "vision.analyze provider=%s tenant=%s file_type=%s output_chars=%d",
+            provider_name,
             ctx.tenant_id,
             mime_type,
             len(result.content),
@@ -107,6 +127,8 @@ class VisionService:
 
         return VisionAnalyzeResponse(
             analysis=result.content,
+            summary=summary,
+            provider=provider_name,
             model=result.model,
             filename=filename,
             file_type=mime_type,

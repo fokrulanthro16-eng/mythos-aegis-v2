@@ -1,3 +1,4 @@
+import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from typing import Annotated
@@ -12,6 +13,7 @@ from app.agent.routes import router as agent_router
 from app.auth.dependencies import get_security_context
 from app.auth.middleware import JWTAuthMiddleware
 from app.billing.routes import router as billing_router
+from app.core.config import settings
 from app.core.errors import (
     IntentParseError,
     SecurityViolationError,
@@ -35,6 +37,8 @@ from app.vision.routes import demo_router as vision_demo_router
 from app.vision.routes import router as vision_router
 from app.workflow.routes import router as workflow_router
 
+logger = logging.getLogger(__name__)
+
 # Type alias for the authenticated security context dependency.
 _SecurityCtx = Annotated[SecurityContext, Depends(get_security_context)]
 
@@ -43,6 +47,7 @@ _SecurityCtx = Annotated[SecurityContext, Depends(get_security_context)]
 async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
     configure_logging()
     setup_tracing(_app)
+    logger.info("startup vision_provider=%s", settings.VISION_PROVIDER)
     yield
     await close_redis()
 

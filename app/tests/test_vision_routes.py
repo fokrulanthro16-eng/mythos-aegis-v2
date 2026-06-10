@@ -76,6 +76,8 @@ def client_extract_only() -> Generator[TestClient, None, None]:
 def _analyze_response() -> VisionAnalyzeResponse:
     return VisionAnalyzeResponse(
         analysis="A chart with revenue data.",
+        summary="A chart with revenue data.",
+        provider="ollama",
         model="qwen2.5-vl:7b",
         filename="chart.png",
         file_type="image/png",
@@ -118,6 +120,8 @@ class TestAnalyzeEndpoint:
         assert resp.status_code == 200
         body = resp.json()
         assert body["analysis"] == "A chart with revenue data."
+        assert body["summary"] == "A chart with revenue data."
+        assert body["provider"] == "ollama"
         assert body["model"] == "qwen2.5-vl:7b"
         assert body["filename"] == "chart.png"
 
@@ -329,3 +333,66 @@ class TestExtractEndpoint:
             files={"file": ("doc.pdf", io.BytesIO(b"%PDF"), "application/pdf")},
         )
         assert resp.status_code == 403
+
+
+# ── Vision provider factory ───────────────────────────────────────────────────
+
+
+class TestVisionProviderFactory:
+    def test_factory_returns_ollama_by_default(self) -> None:
+        from unittest.mock import patch
+
+        from app.vision.providers.factory import get_vision_provider
+        from app.vision.providers.ollama_vision import OllamaVisionProvider
+
+        with patch("app.vision.providers.factory.settings") as mock_settings:
+            mock_settings.VISION_PROVIDER = "ollama"
+            provider = get_vision_provider()
+
+        assert isinstance(provider, OllamaVisionProvider)
+
+    def test_factory_returns_gemini_when_configured(self) -> None:
+        from unittest.mock import patch
+
+        from app.vision.providers.factory import get_vision_provider
+        from app.vision.providers.gemini_vision import GeminiVisionProvider
+
+        with patch("app.vision.providers.factory.settings") as mock_settings:
+            mock_settings.VISION_PROVIDER = "gemini"
+            provider = get_vision_provider()
+
+        assert isinstance(provider, GeminiVisionProvider)
+
+    def test_factory_falls_back_to_ollama_for_unknown_provider(self) -> None:
+        from unittest.mock import patch
+
+        from app.vision.providers.factory import get_vision_provider
+        from app.vision.providers.ollama_vision import OllamaVisionProvider
+
+        with patch("app.vision.providers.factory.settings") as mock_settings:
+            mock_settings.VISION_PROVIDER = "unknown_provider"
+            provider = get_vision_provider()
+
+        assert isinstance(provider, OllamaVisionProvider)
+
+    def test_factory_provider_name_ollama(self) -> None:
+        from unittest.mock import patch
+
+        from app.vision.providers.factory import get_vision_provider
+
+        with patch("app.vision.providers.factory.settings") as mock_settings:
+            mock_settings.VISION_PROVIDER = "ollama"
+            provider = get_vision_provider()
+
+        assert provider.provider_name == "ollama"
+
+    def test_factory_provider_name_gemini(self) -> None:
+        from unittest.mock import patch
+
+        from app.vision.providers.factory import get_vision_provider
+
+        with patch("app.vision.providers.factory.settings") as mock_settings:
+            mock_settings.VISION_PROVIDER = "gemini"
+            provider = get_vision_provider()
+
+        assert provider.provider_name == "gemini"

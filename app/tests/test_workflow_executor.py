@@ -300,6 +300,8 @@ class TestVisionAnalyzeStep:
 
         mock_result = VisionAnalyzeResponse(
             analysis="A bar chart showing Q1 revenue.",
+            summary="A bar chart showing Q1 revenue.",
+            provider="ollama",
             model="qwen2.5-vl:7b",
             filename="chart.png",
             file_type="image/png",

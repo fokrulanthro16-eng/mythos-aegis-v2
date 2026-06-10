@@ -44,6 +44,7 @@ def _session() -> AsyncMock:
 
 def _mock_provider(content: str = "Extracted text.") -> MagicMock:
     provider = MagicMock()
+    provider.provider_name = "ollama"
     provider.model_name = "qwen2.5-vl:7b"
     provider.analyze = AsyncMock(
         return_value=VisionAnalysisResult(

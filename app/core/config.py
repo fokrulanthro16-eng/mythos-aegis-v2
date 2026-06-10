@@ -65,6 +65,9 @@ class Settings(BaseSettings):
     AI_MONTHLY_REQUEST_LIMIT: int = 1000
 
     # ── Vision Intelligence ───────────────────────────────────────────────────
+    # Active vision provider: "ollama" (local) | "gemini" (cloud).
+    # When "gemini", GEMINI_API_KEY must be set; missing key returns 503.
+    VISION_PROVIDER: str = "ollama"
     VISION_MODEL: str = "qwen2.5-vl:7b"
     VISION_FALLBACK_MODEL: str = "llama3.2-vision:11b"
     VISION_MAX_IMAGE_SIZE_MB: int = 20

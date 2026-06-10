@@ -38,6 +38,8 @@ def _b64(data: bytes = b"\x89PNG fake image") -> str:
 def _analyze_response(text: str = "A dog on a beach.") -> VisionAnalyzeResponse:
     return VisionAnalyzeResponse(
         analysis=text,
+        summary=text,
+        provider="ollama",
         model="qwen2.5-vl:7b",
         filename="photo.png",
         file_type="image/png",

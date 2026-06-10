@@ -13,6 +13,8 @@ class VisionAnalyzeResponse(BaseModel):
     """Response from POST /v1/vision/analyze."""
 
     analysis: str
+    summary: str
+    provider: str
     model: str
     filename: str
     file_type: str
