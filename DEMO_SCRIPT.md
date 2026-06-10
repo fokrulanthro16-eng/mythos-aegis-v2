@@ -43,8 +43,7 @@ Authentication is JWT HS256. Every request carries a Bearer token.
 The middleware validates all claims — issuer, audience, expiry — before the request
 reaches any handler. Raw tokens are never logged.
 
-Permissions are checked per endpoint. Uploading a document requires `rag.upload`.
-Analyzing an image requires `vision.analyze`. No permission, no access — 403.
+Permissions are checked per endpoint — no matching permission means a 403.
 
 The SQL Airlock sits in front of any natural-language-to-SQL path.
 Queries go through three stages: fingerprint check, intent classification,
@@ -67,8 +66,7 @@ runs a cosine-distance search against the stored chunks — that's the `<=>` ope
 in pgvector — retrieves the top-K results, and passes them to the LLM as grounded context.
 
 The response comes back with the answer and the source citations.
-You can see exactly which chunks the answer was drawn from.
-That's the screenshot in the README — rag-query-result.png."
+The RAG result is shown in the screenshot, and the pgvector setup is shown in the Supabase screenshot."
 
 ---
 
@@ -76,15 +74,14 @@ That's the screenshot in the README — rag-query-result.png."
 
 > *Show the /console/vision page or the vision-analyze-fallback.png screenshot.*
 
-"The Vision analyzer accepts JPEG, PNG, WebP, GIF, and PDF files.
+"The Vision analyzer accepts images and PDFs.
 
-For this demo, the provider is set to fallback mode — VISION_PROVIDER=fallback in .env.
-That means no Ollama vision model and no Gemini API key are required.
-The fallback provider returns a structured JSON response with a summary,
-detected objects list, and observations list — immediately, with no network call.
+The provider is set to fallback mode — VISION_PROVIDER=fallback in .env.
+No Ollama vision model and no Gemini API key are required.
+The response includes a summary, detected objects, and observations — immediately, with no network call.
 
-When a real key is available, switching to Gemini is a single env var change.
-The factory function reads VISION_PROVIDER at startup and routes accordingly."
+Switching to Gemini is a single env var change —
+the factory reads VISION_PROVIDER and routes to the correct provider on every request."
 
 ---
 
@@ -98,9 +95,6 @@ Ruff passes with zero lint errors.
 Mypy passes with zero type errors.
 Pytest runs 980-plus tests with zero failures and coverage above 90 percent.
 All three GitHub Actions workflows — CI, Docker build, and security scan — are green on main.
-
-The working tree is clean, main is synced with origin, and there are no outstanding
-WARN or FAIL items from the release review.
 
 Mythos Aegis is demo-ready and ready for mentor review. Thank you."
 
