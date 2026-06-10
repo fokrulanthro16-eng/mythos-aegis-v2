@@ -45,19 +45,24 @@ _SCREENSHOT_PROMPT = (
 )
 
 
-def _extract_summary(content: str, provider_name: str) -> str:
-    """Return a display-friendly summary from provider output.
+def _extract_structured(
+    content: str, provider_name: str
+) -> tuple[str, list[str], list[str]]:
+    """Return (summary, detected_objects, observations) from provider output.
 
-    Gemini returns a JSON object; extract its 'summary' key.
-    All other providers return freetext which is used as-is.
+    Gemini and fallback providers return a JSON object; all others return
+    freetext whose full text becomes the summary with empty lists.
     """
-    if provider_name == "gemini":
+    if provider_name in ("gemini", "fallback"):
         try:
             data = _json.loads(content)
-            return str(data.get("summary", content))
+            summary = str(data.get("summary", content))
+            objects = [str(o) for o in data.get("detected_objects", [])]
+            observations = [str(o) for o in data.get("observations", [])]
+            return summary, objects, observations
         except (_json.JSONDecodeError, AttributeError, TypeError):
-            return content
-    return content
+            return content, [], []
+    return content, [], []
 
 
 class VisionService:
@@ -92,7 +97,9 @@ class VisionService:
         )
 
         provider_name = self._provider.provider_name
-        summary = _extract_summary(result.content, provider_name)
+        summary, detected_objects, observations = _extract_structured(
+            result.content, provider_name
+        )
 
         index_status: str | None = None
         document_id: UUID | None = None
@@ -129,6 +136,8 @@ class VisionService:
             analysis=result.content,
             summary=summary,
             provider=provider_name,
+            detected_objects=detected_objects,
+            observations=observations,
             model=result.model,
             filename=filename,
             file_type=mime_type,

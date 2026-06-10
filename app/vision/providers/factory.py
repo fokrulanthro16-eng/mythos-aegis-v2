@@ -21,6 +21,11 @@ def get_vision_provider() -> BaseVisionProvider:
 
         return GeminiVisionProvider()
 
+    if name == "fallback":
+        from app.vision.providers.fallback_vision import FallbackVisionProvider
+
+        return FallbackVisionProvider()
+
     from app.vision.providers.ollama_vision import OllamaVisionProvider
 
     return OllamaVisionProvider()

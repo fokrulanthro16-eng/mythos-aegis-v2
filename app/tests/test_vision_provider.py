@@ -233,3 +233,60 @@ class TestErrorHandling:
 
             with pytest.raises(VisionProviderUnavailableError):
                 await provider.analyze(b"img", "Describe.")
+
+
+# ── FallbackVisionProvider ────────────────────────────────────────────────────
+
+
+class TestFallbackVisionProvider:
+    def test_provider_name(self) -> None:
+        from app.vision.providers.fallback_vision import FallbackVisionProvider
+
+        assert FallbackVisionProvider().provider_name == "fallback"
+
+    def test_model_name(self) -> None:
+        from app.vision.providers.fallback_vision import FallbackVisionProvider
+
+        assert FallbackVisionProvider().model_name == "fallback-static"
+
+    @pytest.mark.asyncio
+    async def test_analyze_returns_result_without_network(self) -> None:
+        import json
+
+        from app.vision.providers.fallback_vision import FallbackVisionProvider
+
+        provider = FallbackVisionProvider()
+        result = await provider.analyze(b"\xff\xd8\xff", "Any prompt.")
+
+        assert isinstance(result, VisionAnalysisResult)
+        assert result.model == "fallback-static"
+        data = json.loads(result.content)
+        assert "summary" in data
+
+    @pytest.mark.asyncio
+    async def test_analyze_returns_empty_detected_objects(self) -> None:
+        import json
+
+        from app.vision.providers.fallback_vision import FallbackVisionProvider
+
+        result = await FallbackVisionProvider().analyze(b"img", "Prompt.")
+        data = json.loads(result.content)
+        assert data["detected_objects"] == []
+
+    @pytest.mark.asyncio
+    async def test_analyze_zero_token_counts(self) -> None:
+        from app.vision.providers.fallback_vision import FallbackVisionProvider
+
+        result = await FallbackVisionProvider().analyze(b"img", "Prompt.")
+        assert result.input_tokens == 0
+        assert result.output_tokens == 0
+
+    @pytest.mark.asyncio
+    async def test_analyze_ignores_image_bytes(self) -> None:
+        """Fallback must not raise even with arbitrary image bytes."""
+        from app.vision.providers.fallback_vision import FallbackVisionProvider
+
+        provider = FallbackVisionProvider()
+        r1 = await provider.analyze(b"", "Prompt.")
+        r2 = await provider.analyze(b"\x00" * 1024, "Prompt.")
+        assert r1.content == r2.content

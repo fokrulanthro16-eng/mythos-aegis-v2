@@ -18,6 +18,8 @@ class VisionAnalyzeResponse(BaseModel):
     model: str
     filename: str
     file_type: str
+    detected_objects: list[str] = []
+    observations: list[str] = []
     index_status: str | None = None
     document_id: UUID | None = None
 

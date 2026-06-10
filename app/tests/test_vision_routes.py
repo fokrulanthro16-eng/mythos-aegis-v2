@@ -396,3 +396,26 @@ class TestVisionProviderFactory:
             provider = get_vision_provider()
 
         assert provider.provider_name == "gemini"
+
+    def test_factory_returns_fallback_when_configured(self) -> None:
+        from unittest.mock import patch
+
+        from app.vision.providers.factory import get_vision_provider
+        from app.vision.providers.fallback_vision import FallbackVisionProvider
+
+        with patch("app.vision.providers.factory.settings") as mock_settings:
+            mock_settings.VISION_PROVIDER = "fallback"
+            provider = get_vision_provider()
+
+        assert isinstance(provider, FallbackVisionProvider)
+
+    def test_factory_provider_name_fallback(self) -> None:
+        from unittest.mock import patch
+
+        from app.vision.providers.factory import get_vision_provider
+
+        with patch("app.vision.providers.factory.settings") as mock_settings:
+            mock_settings.VISION_PROVIDER = "fallback"
+            provider = get_vision_provider()
+
+        assert provider.provider_name == "fallback"
