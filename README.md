@@ -10,6 +10,20 @@ built-in fallback mode — no external API key required for demo runs.
 
 ---
 
+## Live Deployment
+
+| | URL |
+|---|---|
+| **Frontend App** | https://mythos-aegis-v2.vercel.app |
+| **Backend API** | https://mythos-aegis-api.onrender.com |
+| **Backend Health Check** | https://mythos-aegis-api.onrender.com/health |
+
+- Backend is deployed on **Render** (Python 3.12, FastAPI)
+- Frontend is deployed on **Vercel** (Next.js 15)
+- Vision runs with `VISION_PROVIDER=fallback` for demo safety — no Gemini key or Ollama required
+
+---
+
 ## Architecture
 
 | Component | Technology |
