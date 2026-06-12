@@ -22,6 +22,11 @@ built-in fallback mode — no external API key required for demo runs.
 - Frontend is deployed on **Vercel** (Next.js 15)
 - Vision runs with `VISION_PROVIDER=fallback` for demo safety — no Gemini key or Ollama required
 
+## Demo Videos
+
+- [Review / Demo Video](https://youtu.be/QK9DoTZvrIY)
+- [Course Overview / Presentation Reference Video](https://www.youtube.com/watch?v=nfIGTxYJekM)
+
 ---
 
 ## Architecture

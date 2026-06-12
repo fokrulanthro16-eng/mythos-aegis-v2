@@ -25,6 +25,10 @@ Included documentation:
 - MENTOR_DEMO_CHECKLIST.md
 - MENTOR_EMAIL.md
 
-The project is ready for mentor review. I will also prepare a short 3-minute demo video using the included demo script.
+The project is ready for mentor review.
+
+Demo Videos:
+- Review / Demo Video: https://youtu.be/QK9DoTZvrIY
+- Course Overview / Presentation Reference Video: https://www.youtube.com/watch?v=nfIGTxYJekM
 
 Thank you.
